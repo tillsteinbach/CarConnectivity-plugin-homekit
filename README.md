@@ -5,8 +5,8 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/tillsteinbach/CarConnectivity-plugin-homekit)](https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/latest)
 [![GitHub](https://img.shields.io/github/license/tillsteinbach/CarConnectivity-plugin-homekit)](https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/blob/master/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/tillsteinbach/CarConnectivity-plugin-homekit)](https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/issues)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/carconnectivity-plugin-abrp?label=PyPI%20Downloads)](https://pypi.org/project/carconnectivity-plugin-abrp/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/carconnectivity-plugin-abrp)](https://pypi.org/project/carconnectivity-plugin-abrp/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/carconnectivity-plugin-homekit?label=PyPI%20Downloads)](https://pypi.org/project/carconnectivity-plugin-homekit/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/carconnectivity-plugin-homekit)](https://pypi.org/project/carconnectivity-plugin-homekit/)
 [![Donate at PayPal](https://img.shields.io/badge/Donate-PayPal-2997d8)](https://www.paypal.com/donate?hosted_button_id=2BVFF5GJ9SXAJ)
 [![Sponsor at Github](https://img.shields.io/badge/Sponsor-GitHub-28a745)](https://github.com/sponsors/tillsteinbach)
 
@@ -41,5 +41,5 @@ In your carconnectivity.json configuration add a section for the homekit plugin 
 ## Updates
 If you want to update, the easiest way is:
 ```bash
-pip3 install carconnectivity-plugin-abrp --upgrade
+pip3 install carconnectivity-plugin-homekit --upgrade
 ```
