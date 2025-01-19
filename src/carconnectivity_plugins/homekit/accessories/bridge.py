@@ -124,12 +124,17 @@ class CarConnectivityBridge(Bridge):
                 model: str = vehicle.model.value
             else:
                 model: str = 'Unknown'
+            if vehicle.software is not None and vehicle.software.enabled and vehicle.software.version is not None and vehicle.software.version.enabled:
+                vehicle_software_version: Optional[str] = vehicle.software.version.value
+            else:
+                vehicle_software_version: Optional[str] = None
             # Climatization
             if vehicle.climatization is not None and vehicle.climatization.enabled:
                 climatization_accessory = ClimatizationAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin),
                                                                     id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
                                                                     climatization=vehicle.climatization)
-                climatization_accessory.set_info_service(manufacturer=manufacturer, model=model, serial_number=f'{vin}-climatization')
+                climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                         serial_number=f'{vin}-climatization')
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'services',
                                         [service.display_name for service in climatization_accessory.services])
