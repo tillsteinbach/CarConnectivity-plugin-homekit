@@ -2,10 +2,15 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import logging
 import threading
 
 from pyhap.accessory import Accessory
 from pyhap.characteristic import Characteristic
+
+from carconnectivity.observable import Observable
+from carconnectivity.vehicle import ElectricVehicle
+from carconnectivity.charging import Charging
 
 if TYPE_CHECKING:
     from typing import Optional, Any
@@ -13,7 +18,11 @@ if TYPE_CHECKING:
     from pyhap.accessory_driver import AccessoryDriver
     from pyhap.service import Service
 
+    from carconnectivity.vehicle import GenericVehicle, ElectricDrive
+
     from carconnectivity_plugins.homekit.accessories.bridge import CarConnectivityBridge
+
+LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.generic_accessory")
 
 
 class GenericAccessory(Accessory):
@@ -138,3 +147,99 @@ class GenericAccessory(Accessory):
         """
         if self.char_status_fault is not None:
             self.char_status_fault.set_value(value)
+
+
+class BatteryGenericVehicleAccessory(GenericAccessory):
+    """Vehcile Accessory with battery characteristics"""
+
+    def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
+                 vehicle: GenericVehicle) -> None:
+        super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str)
+
+        self.vehicle: GenericVehicle = vehicle
+
+        self.battery_service: Optional[Service] = None
+        self.char_battery_level: Optional[Characteristic] = None
+        self.char_status_low_battery: Optional[Characteristic] = None
+        self.char_charging_state: Optional[Characteristic] = None
+
+        # if batteryStatus is not None and batteryStatus.currentSOC_pct.enabled:
+        #     batteryStatus.currentSOC_pct.addObserver(self.onCurrentSOCChange, AddressableLeaf.ObserverEvent.VALUE_CHANGED)
+        #     self.charBatteryLevel = self.batteryService.configure_char('BatteryLevel')
+        #     self.charBatteryLevel.set_value(batteryStatus.currentSOC_pct.value)
+        #     self.charStatusLowBattery = self.batteryService.configure_char('StatusLowBattery')
+        #     self.setStatusLowBattery(batteryStatus.currentSOC_pct)
+
+        # if batteryStatus is not None and chargingStatus is not None and chargingStatus.chargingState.enabled:
+        #     chargingStatus.chargingState.addObserver(self.onChargingState, AddressableLeaf.ObserverEvent.VALUE_CHANGED)
+        #     self.charChargingState = self.batteryService.configure_char('ChargingState')
+        #     self.setChargingState(chargingStatus.chargingState)
+
+    def add_soc_characteristic(self) -> None:
+        """
+        Adds the State of Charge (SoC) characteristic to the accessory if the vehicle is an electric vehicle.
+
+        This method checks if the vehicle is an instance of `ElectricVehicle`. If so, it retrieves the electric drive
+        and its level. If the level is enabled, it adds an observer to monitor changes in the level value. It then
+        adds a battery service with characteristics for battery level, low battery status, and charging state.
+        The battery level and low battery status are configured and set based on the current level value of the
+        electric drive. If the accessory has a service, the battery service is linked to it.
+
+        Returns:
+            None
+        """
+        if isinstance(self.vehicle, ElectricVehicle):
+            electric_drive: ElectricDrive = self.vehicle.get_electric_drive()
+            if electric_drive is not None and electric_drive.level is not None and electric_drive.level.enabled:
+                electric_drive.level.add_observer(self._on_level_change, Observable.ObserverEvent.VALUE_CHANGED)
+                self.battery_service: Optional[Service] = self.add_preload_service(service='BatteryService',  # pyright: ignore[reportArgumentType]
+                                                                                   chars=['BatteryLevel',  # pyright: ignore[reportArgumentType]
+                                                                                          'StatusLowBattery',
+                                                                                          'ChargingState'])
+                self.char_battery_level = self.battery_service.configure_char('BatteryLevel')
+                self.char_battery_level.set_value(electric_drive.level.value)
+                self.char_status_low_battery = self.battery_service.configure_char('StatusLowBattery')
+                self._set_low_battery_status(electric_drive.level.value)
+                if self.service is not None:
+                    self.service.add_linked_service(self.battery_service)
+                if self.vehicle.charging is not None and self.vehicle.charging.state is not None and self.vehicle.charging.state.enabled:
+                    self.vehicle.charging.state.add_observer(self._on_charging_state, Observable.ObserverEvent.VALUE_CHANGED)
+                    self.char_charging_state = self.battery_service.configure_char('ChargingState')
+                    self._set_charging_state(self.vehicle.charging.state.value)
+
+    def _set_low_battery_status(self, level: Optional[float]) -> None:
+        if self.char_status_low_battery is not None:
+            if level is None or level > 10:
+                self.char_status_low_battery.set_value(0)
+            else:
+                self.char_status_low_battery.set_value(1)
+
+    def _set_charging_state(self, charging_state) -> None:
+        if self.char_charging_state is not None:
+            if charging_state is not None:
+                if charging_state in (Charging.ChargingState.OFF,
+                                      Charging.ChargingState.READY_FOR_CHARGING,
+                                      Charging.ChargingState.UNSUPPORTED):
+                    self.char_charging_state.set_value(0)
+                elif charging_state in (Charging.ChargingState.CHARGING,
+                                        Charging.ChargingState.DISCHARGING,
+                                        Charging.ChargingState.CONSERVATION):
+                    self.char_charging_state.set_value(1)
+                elif charging_state == Charging.ChargingState.ERROR:
+                    self.char_charging_state.set_value(2)
+                else:
+                    self.char_charging_state.set_value(2)
+                    LOG.warning('unsupported charging state: %s', charging_state)
+            else:
+                self.char_charging_state.set_value(2)
+
+    def _on_level_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+        if flags & Observable.ObserverEvent.VALUE_CHANGED:
+            if element.value is not None and self.char_battery_level is not None:
+                self.char_battery_level.set_value(element.value)
+                self._set_low_battery_status(element.value)
+
+    def _on_charging_state(self, element: Any, flags: Observable.ObserverEvent) -> None:
+        if flags & Observable.ObserverEvent.VALUE_CHANGED:
+            if element.value is not None and self.char_charging_state is not None:
+                self._set_charging_state(element.value)

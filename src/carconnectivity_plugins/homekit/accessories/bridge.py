@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING
 import logging
 import json
 
+from carconnectivity.drive import GenericDrive
 from pyhap.accessory import Bridge
 from pyhap.accessory_driver import AccessoryDriver
 
 from carconnectivity.observable import Observable
-from carconnectivity.vehicle import GenericVehicle
+from carconnectivity.vehicle import GenericVehicle, ElectricVehicle
 from carconnectivity._version import __version__ as __carconnectivity_version__
 
 from carconnectivity_plugins.homekit.accessories.dummy_accessory import DummyAccessory
@@ -132,7 +133,7 @@ class CarConnectivityBridge(Bridge):
             if vehicle.climatization is not None and vehicle.climatization.enabled:
                 climatization_accessory = ClimatizationAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin),
                                                                     id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
-                                                                    climatization=vehicle.climatization)
+                                                                    vehicle=vehicle)
                 climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                          serial_number=f'{vin}-climatization')
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
