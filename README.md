@@ -38,6 +38,14 @@ In your carconnectivity.json configuration add a section for the homekit plugin 
     }
 }
 ```
+
+## Adding to ios
+After CarConnectivity is started the first time with the Homekit plugin enabled it will display a QR-Code and the pin-code in the console. Use the QR code or the pin to add the bridge to the Home app. Afterwards all accessories your car offers are added to the Home app.
+
+## A note to Docker users
+CarConnectivity with Homekit will need Host or Macvlan Mode for the container. This is necessary as the bridge mode will not forward multicast which is necessary for Homekit to work. Host mode is not working on macOS. The reson is that the network is still virtualized.
+If you do not like to share the host network with CarConnectivity you can use macvlan mode. In macvlan mode CarConnectivity will appear as a seperate computer in the network.
+
 ## Updates
 If you want to update, the easiest way is:
 ```bash
