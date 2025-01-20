@@ -244,3 +244,4 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
             self.char_remaining_duration.set_value(remaining_duration)
             if remaining_duration > 0:
                 self.update_remaining_duration_timer = threading.Timer(interval=5.0, function=self.__update_remaining_duration)
+                self.update_remaining_duration_timer.start()

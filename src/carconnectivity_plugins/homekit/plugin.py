@@ -1,4 +1,4 @@
-"""Module implements the plugin to connect with ABRP"""
+"""Module implements the plugin to connect with Homekit"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
