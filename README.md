@@ -22,7 +22,7 @@ pip3 install carconnectivity-plugin-homekit
 after you installed CarConnectivity
 
 ## Configuration
-In your carconnectivity.json configuration add a section for the homekit plugin like this:
+In your carconnectivity.json configuration add a section for the homekit plugin like this. A documentation of all possible config options can be found [here](https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/tree/main/doc/Config.md).
 ```
 {
     "carConnectivity": {
