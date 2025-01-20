@@ -92,12 +92,20 @@ class Plugin(BasePlugin):
 
     def startup(self) -> None:
         LOG.info("Starting Homekit plugin")
-        self._background_thread = threading.Thread(target=self.__delayed_startup, daemon=False)
+        self._background_thread = threading.Thread(target=self._driver.start, daemon=False)
         self._background_thread.start()
+        update_thread = threading.Timer(interval=5.0, function=self.__delayed_update)
+        update_thread.daemon = True
+        update_thread.start()
         LOG.debug("Starting Homekit plugin done")
 
-    def __delayed_startup(self) -> None:
-        self._driver.start()
+    def __delayed_update(self) -> None:
+        self._stop_event.wait(5.0)
+        if not self._stop_event.is_set():
+            self._bridge.install_observers()
+            if self.car_connectivity.garage is not None:
+                for vehicle in self.car_connectivity.garage.list_vehicles():
+                    self._bridge.update(vehicle=vehicle)
 
     def shutdown(self) -> None:
         self._driver.stop()

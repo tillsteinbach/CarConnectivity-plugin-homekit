@@ -59,14 +59,13 @@ class CarConnectivityBridge(Bridge):
                     placeholder_accessory.add_preload_service(service, chars=None)
             self.add_accessory(placeholder_accessory)
 
+    def install_observers(self) -> None:
         if self.car_connectivity.garage is not None:
-            for vehicle in self.car_connectivity.garage.list_vehicles():
-                self.update(vehicle=vehicle)
-        car_connectivity.garage.add_observer(observer=self.__on_garage_update, flag=Observable.ObserverEvent.ENABLED, on_transaction_end=True)
+            self.car_connectivity.garage.add_observer(observer=self.__on_garage_update, flag=Observable.ObserverEvent.ENABLED, on_transaction_end=True)
 
     def __on_garage_update(self, element: Any, flags: Observable.ObserverEvent) -> None:
         """Update the accessories when the garage is updated."""
-        if (flags & Observable.ObserverEvent.ENABLED) and isinstance(element, GenericVehicle):
+        if (flags & (Observable.ObserverEvent.ENABLED)) and isinstance(element, GenericVehicle):
             self.update(vehicle=element)
 
     def persist_config(self) -> None:
@@ -130,17 +129,21 @@ class CarConnectivityBridge(Bridge):
             else:
                 vehicle_software_version: Optional[str] = None
             # Climatization
-            if vehicle.climatization is not None and vehicle.climatization.enabled:
+            climatization_aid: int = self.select_aid('Climatization', vin)
+            if vehicle.climatization is not None and vehicle.climatization.enabled \
+                    and (climatization_aid not in self.accessories or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory)):
                 climatization_accessory = ClimatizationAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin),
-                                                                    id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
-                                                                    vehicle=vehicle)
+                                                                 id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
+                                                                 vehicle=vehicle)
                 climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                          serial_number=f'{vin}-climatization')
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'services',
                                         [service.display_name for service in climatization_accessory.services])
+                # Add the accessory to the bridge if not known
                 if climatization_accessory.aid not in self.accessories:
                     self.add_accessory(climatization_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
                 else:
                     self.accessories[climatization_accessory.aid] = climatization_accessory
                 config_changed = True

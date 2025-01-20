@@ -163,18 +163,6 @@ class BatteryGenericVehicleAccessory(GenericAccessory):
         self.char_status_low_battery: Optional[Characteristic] = None
         self.char_charging_state: Optional[Characteristic] = None
 
-        # if batteryStatus is not None and batteryStatus.currentSOC_pct.enabled:
-        #     batteryStatus.currentSOC_pct.addObserver(self.onCurrentSOCChange, AddressableLeaf.ObserverEvent.VALUE_CHANGED)
-        #     self.charBatteryLevel = self.batteryService.configure_char('BatteryLevel')
-        #     self.charBatteryLevel.set_value(batteryStatus.currentSOC_pct.value)
-        #     self.charStatusLowBattery = self.batteryService.configure_char('StatusLowBattery')
-        #     self.setStatusLowBattery(batteryStatus.currentSOC_pct)
-
-        # if batteryStatus is not None and chargingStatus is not None and chargingStatus.chargingState.enabled:
-        #     chargingStatus.chargingState.addObserver(self.onChargingState, AddressableLeaf.ObserverEvent.VALUE_CHANGED)
-        #     self.charChargingState = self.batteryService.configure_char('ChargingState')
-        #     self.setChargingState(chargingStatus.chargingState)
-
     def add_soc_characteristic(self) -> None:
         """
         Adds the State of Charge (SoC) characteristic to the accessory if the vehicle is an electric vehicle.
@@ -188,7 +176,7 @@ class BatteryGenericVehicleAccessory(GenericAccessory):
         Returns:
             None
         """
-        if isinstance(self.vehicle, ElectricVehicle):
+        if self.battery_service is None and isinstance(self.vehicle, ElectricVehicle):
             electric_drive: ElectricDrive = self.vehicle.get_electric_drive()
             if electric_drive is not None and electric_drive.level is not None and electric_drive.level.enabled:
                 electric_drive.level.add_observer(self._on_level_change, Observable.ObserverEvent.VALUE_CHANGED)

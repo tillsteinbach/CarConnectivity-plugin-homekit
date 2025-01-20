@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import logging
+import threading
 from datetime import datetime, timezone
+
 
 from pyhap.accessory_driver import AccessoryDriver
 from pyhap.characteristic import Characteristic
@@ -42,6 +44,8 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str, vehicle=vehicle)
 
+        self.update_remaining_duration_timer: Optional[threading.Timer] = None
+
         # pyright: ignore[reportArgumentType]
         self.service: Optional[Service] = self.add_preload_service(service='Thermostat',  # pyright: ignore[reportArgumentType]
                                                                    chars=['Name', 'ConfiguredName',  # pyright: ignore[reportArgumentType]
@@ -54,6 +58,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
         self.char_target_temperature: Optional[Characteristic] = None
         self.char_temperature_display_units: Optional[Characteristic] = None
         self.char_remaining_duration: Optional[Characteristic] = None
+        self.estimated_date_reached: Optional[datetime] = None
 
         self.target_temperature_attribute: Optional[TemperatureAttribute] = None
         self.climatization_start_stop_command: Optional[GenericCommand] = None
@@ -98,6 +103,8 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
                                                                                      valid_values={'Auto': 3, 'Off': 0},
                                                                                      setter_callback=self.__on_hk_target_heating_cooling_state_changed)
                 self.char_target_heating_cooling_state.allow_invalid_client_values = True
+                # call on change again to also set the target state
+                self.__on_cc_climatization_state_change(self.vehicle.climatization.state, Observable.ObserverEvent.VALUE_CHANGED)
 
             if self.vehicle.climatization.estimated_date_reached is not None and self.vehicle.climatization.estimated_date_reached.enabled:
                 self.vehicle.climatization.estimated_date_reached.add_observer(self.__on_cc_estimated_date_reached_change,
@@ -109,8 +116,18 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
         self.add_name_characteristics()
         self.add_status_fault_characteristic()
 
-        if isinstance(self.vehicle, ElectricVehicle):
+        if self.battery_service is None and isinstance(self.vehicle, ElectricVehicle):
             self.add_soc_characteristic()
+        else:
+            self.vehicle.add_observer(self.__on_cc_car_type_change, flag=Observable.ObserverEvent.UPDATED)
+
+    def __on_cc_car_type_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+        if flags & Observable.ObserverEvent.UPDATED:
+            if isinstance(element, ElectricVehicle):
+                self.add_soc_characteristic()
+                self.vehicle.type.remove_observer(self.__on_cc_car_type_change)
+        else:
+            LOG.debug('Unsupported event %s', flags)
 
     def __on_cc_target_temperature_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):
@@ -176,11 +193,9 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
     def __update_display_units_properties(self) -> None:
         if self.char_target_temperature is not None and self.char_temperature_display_units is not None:
             if self.configured_temperature_unit == Temperature.C:
-                self.char_target_temperature .override_properties(properties={'maxValue': 29.5, 'minStep': 0.5, 'minValue': 16},
-                                                                  valid_values={"Celsius": 0, "Fahrenheit": 1})
+                self.char_target_temperature.override_properties(properties={'maxValue': 29.5, 'minStep': 0.5, 'minValue': 16})
             elif self.configured_temperature_unit == Temperature.F:
-                self.char_target_temperature .override_properties(properties={'maxValue': 85, 'minStep': 0.5, 'minValue': 61},
-                                                                  valid_values={"Celsius": 0, "Fahrenheit": 1})
+                self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': 0.5, 'minValue': 61})
 
     def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
@@ -210,10 +225,22 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
     def __on_cc_estimated_date_reached_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT:
             if self.char_remaining_duration is not None:
-                remaining_duration: int = 0
                 if element.enabled and element.value is not None and isinstance(element.value, datetime):
-                    remaining_duration = round((element.value - datetime.now(tz=timezone.utc)).total_seconds())
-                self.char_remaining_duration.set_value(remaining_duration)
-                LOG.debug('Remaining Duration Changed: %ds', remaining_duration)
+                    self.estimated_date_reached = element.value
+                    self.__update_remaining_duration()
+                    LOG.debug('Climatization estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
         else:
             LOG.debug('Unsupported event %s', flags)
+
+    def __update_remaining_duration(self) -> None:
+        if self.update_remaining_duration_timer is not None:
+            self.update_remaining_duration_timer.cancel()
+            self.update_remaining_duration_timer = None
+        if self.char_remaining_duration is not None:
+            remaining_duration: int = 0
+            utc_now: datetime = datetime.now(tz=timezone.utc)
+            if self.estimated_date_reached is not None and self.estimated_date_reached > utc_now:
+                remaining_duration = round((self.estimated_date_reached - utc_now).total_seconds())
+            self.char_remaining_duration.set_value(remaining_duration)
+            if remaining_duration > 0:
+                self.update_remaining_duration_timer = threading.Timer(interval=5.0, function=self.__update_remaining_duration)
