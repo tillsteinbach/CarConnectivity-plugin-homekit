@@ -176,11 +176,11 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
     def __update_display_units_properties(self) -> None:
         if self.char_target_temperature is not None and self.char_temperature_display_units is not None:
             if self.configured_temperature_unit == Temperature.C:
-                self.char_temperature_display_units.override_properties(properties={'maxValue': 29.5, 'minStep': 0.5, 'minValue': 16},
-                                                                        valid_values={"Celsius": 0, "Fahrenheit": 1})
+                self.char_target_temperature .override_properties(properties={'maxValue': 29.5, 'minStep': 0.5, 'minValue': 16},
+                                                                  valid_values={"Celsius": 0, "Fahrenheit": 1})
             elif self.configured_temperature_unit == Temperature.F:
-                self.char_temperature_display_units.override_properties(properties={'maxValue': 85, 'minStep': 0.5, 'minValue': 61},
-                                                                        valid_values={"Celsius": 0, "Fahrenheit": 1})
+                self.char_target_temperature .override_properties(properties={'maxValue': 85, 'minStep': 0.5, 'minValue': 61},
+                                                                  valid_values={"Celsius": 0, "Fahrenheit": 1})
 
     def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
