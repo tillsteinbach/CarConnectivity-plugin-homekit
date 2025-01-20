@@ -31,11 +31,8 @@ The `type` and config options specific to your connector or plugin can be found 
         ],
         "plugins": [
             {
-                "type": "homekit", //Definition for Homekit
-                "disabled": false,
-                "config": {
-                    "log_level": "debug"
-                }
+                "type": "homekit", //Minimal definition for Homekit
+                "config": {}
             }
         ]
     }
@@ -50,6 +47,7 @@ These are the valid options for the Homekit plugin
         "plugins": [
             {
                 "type": "homekit", // Definition for the Homekit plugin
+                "disabled": false, // You can disable plugins without removing them from the config completely
                 "config": {
                     "log_level": "error", // The log level for the plugin. Otherwise uses the global log level
                     "address": "0.0.0.0", // IP interface address the homekit service should listen on
