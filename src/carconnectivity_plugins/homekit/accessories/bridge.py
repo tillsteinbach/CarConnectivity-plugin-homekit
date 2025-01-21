@@ -19,7 +19,7 @@ from carconnectivity_plugins.homekit._version import __version__
 
 
 if TYPE_CHECKING:
-    from typing import Optional, Any, Dict
+    from typing import Optional, Any, Dict, List
 
     from carconnectivity.carconnectivity import CarConnectivity
 
@@ -30,12 +30,16 @@ class CarConnectivityBridge(Bridge):
     """VWsfriend Bridge"""
 
     def __init__(self, car_connectivity: CarConnectivity, driver: AccessoryDriver, display_name: str = 'CarConnectivity',
-                 accessory_config_file: str = '~/.carconnectivity/homekit-accessory.config'):
+                 accessory_config_file: str = '~/.carconnectivity/homekit-accessory.config', ignore_vins: List[str] = [],
+                 ignore_accessory_types: List[str] = []) -> None:
         super().__init__(driver=driver, display_name=display_name, )
 
         self.set_info_service(f'{__carconnectivity_version__} (HomeKit Plugin {__version__})', 'Till Steinbach', 'CarConnectivity', None)
 
         self.car_connectivity: CarConnectivity = car_connectivity
+        self.ignore_vins: List[str] = ignore_vins
+        self.ignore_accessory_types: List[str] = ignore_accessory_types
+
         self.driver: AccessoryDriver = driver
 
         self.accessory_config_file: str = accessory_config_file
@@ -112,6 +116,9 @@ class CarConnectivityBridge(Bridge):
         config_changed = False
         if vehicle.enabled and vehicle.vin.enabled and vehicle.vin.value is not None:
             vin: str = vehicle.vin.value
+            if vin in self.ignore_vins:
+                LOG.debug('Ignoring vehicle with VIN %s due to configuration', vin)
+                return
             if vehicle.manufacturer.enabled and vehicle.manufacturer.value is not None:
                 manufacturer: str = vehicle.manufacturer.value
             else:
@@ -130,7 +137,8 @@ class CarConnectivityBridge(Bridge):
                 vehicle_software_version: Optional[str] = None
             # Climatization
             climatization_aid: int = self.select_aid('Climatization', vin)
-            if vehicle.climatization is not None and vehicle.climatization.enabled \
+            if 'Climatization' not in self.ignore_accessory_types \
+                    and vehicle.climatization is not None and vehicle.climatization.enabled \
                     and (climatization_aid not in self.accessories or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory)):
                 climatization_accessory = ClimatizationAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin),
                                                                  id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
@@ -150,7 +158,8 @@ class CarConnectivityBridge(Bridge):
 
             # Charging
             charging_aid: int = self.select_aid('Charging', vin)
-            if isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
+            if 'Charging' not in self.ignore_accessory_types \
+                    and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
                     and (charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory)):
                 charging_accessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
                                                        id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)

@@ -55,6 +55,8 @@ These are the valid options for the Homekit plugin
                     "pincode": "123-45-678", // Pincode for the accessory, if left out random pin will be displayed on console
                     "accessory_state_file": "~/.carconnectivity/homekit-accessory.state", // File for homekit to store pairing and other information
                     "accessory_config_file": "~/.carconnectivity/homekit-accessory.config", // File for homekit to store current configuration of services
+                    "ignore_vins":["WZWXYZ3CZME181225", "TTGHT9NY8SF025348"], //Do not create Homekit Accessories for these VINs
+                    "ignore_accessory_types": ["Climatization", "Charging"], //Do not create Homekti Accessories of tese types
                 }
             }
         ]

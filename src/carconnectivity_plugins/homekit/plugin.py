@@ -19,7 +19,7 @@ from carconnectivity_plugins.homekit.accessories.custom_characteristics import C
 from carconnectivity_plugins.homekit.accessories.bridge import CarConnectivityBridge
 
 if TYPE_CHECKING:
-    from typing import Dict, Optional
+    from typing import Dict, Optional, List
     from carconnectivity.carconnectivity import CarConnectivity
 
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit")
@@ -81,13 +81,24 @@ class Plugin(BasePlugin):
         file = Path(accessory_config_file)
         file.parent.mkdir(parents=True, exist_ok=True)
 
+        if 'ignore_vins' in config and config['ignore_vins'] is not None:
+            ignore_vins: List[str] = config['ignore_vins']
+        else:
+            ignore_vins = []
+        
+        if 'ignore_accessory_types' in config and config['ignore_accessory_types'] is not None:
+            ignore_accessory_types: List[str] = config['ignore_accessory_types']
+        else:
+            ignore_accessory_types = []
+
         # Add the accessory driver
         self._driver = AccessoryDriver(address=address, port=port, pincode=pincode, persist_file=accessory_state_file)
 
         for characteristic_key, characteristic in CUSTOM_CHARACTERISTICS.items():
             self._driver.loader.char_types[characteristic_key] = characteristic
 
-        self._bridge = CarConnectivityBridge(driver=self._driver, car_connectivity=car_connectivity, accessory_config_file=accessory_config_file)
+        self._bridge = CarConnectivityBridge(driver=self._driver, car_connectivity=car_connectivity, accessory_config_file=accessory_config_file,
+                                             ignore_vins=ignore_vins, ignore_accessory_types=ignore_accessory_types)
         self._driver.add_accessory(self._bridge)
 
     def startup(self) -> None:
