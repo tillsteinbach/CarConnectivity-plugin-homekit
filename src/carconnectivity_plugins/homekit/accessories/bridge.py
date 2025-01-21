@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import logging
 import json
 
-from carconnectivity.drive import GenericDrive
 from pyhap.accessory import Bridge
 from pyhap.accessory_driver import AccessoryDriver
 
@@ -15,6 +14,7 @@ from carconnectivity._version import __version__ as __carconnectivity_version__
 
 from carconnectivity_plugins.homekit.accessories.dummy_accessory import DummyAccessory
 from carconnectivity_plugins.homekit.accessories.climatization import ClimatizationAccessory
+from carconnectivity_plugins.homekit.accessories.charging import ChargingAccessory
 from carconnectivity_plugins.homekit._version import __version__
 
 
@@ -139,13 +139,32 @@ class CarConnectivityBridge(Bridge):
                                                          serial_number=f'{vin}-climatization')
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'services',
-                                        [service.display_name for service in climatization_accessory.services])
+                                     [service.display_name for service in climatization_accessory.services])
                 # Add the accessory to the bridge if not known
                 if climatization_accessory.aid not in self.accessories:
                     self.add_accessory(climatization_accessory)
                 # Replace the accessory if it is known but not of the correct type (was Dummy before)
                 else:
                     self.accessories[climatization_accessory.aid] = climatization_accessory
+                config_changed = True
+
+            # Charging
+            charging_aid: int = self.select_aid('Charging', vin)
+            if isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
+                    and (charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory)):
+                charging_accessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
+                                                       id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)
+                charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                    serial_number=f'{vin}-charging')
+                self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'category', charging_accessory.category)
+                self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'services',
+                                     [service.display_name for service in charging_accessory.services])
+                # Add the accessory to the bridge if not known
+                if charging_accessory.aid not in self.accessories:
+                    self.add_accessory(charging_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                else:
+                    self.accessories[charging_accessory.aid] = charging_accessory
                 config_changed = True
         if config_changed:
             self.driver.config_changed()
@@ -155,42 +174,6 @@ class CarConnectivityBridge(Bridge):
                         
 
 
-        #         if vehicle.statusExists('charging', 'batteryStatus'):
-        #             batteryStatus = vehicle.domains['charging']['batteryStatus']
-        #         else:
-        #             batteryStatus = None
-
-        #         if vehicle.statusExists('charging', 'chargingStatus'):
-        #             chargingStatus = vehicle.domains['charging']['chargingStatus']
-        #         else:
-        #             chargingStatus = None
-
-        #         climatizationAccessory = Climatization(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin), id='Climatization', vin=vin,
-        #                                                displayName=f'{nickname} Climatization', climatizationStatus=climatizationStatus,
-        #                                                climatizationSettings=climatizationSettings, batteryStatus=batteryStatus, chargingStatus=chargingStatus,
-        #                                                climatizationControl=vehicle.controls.climatizationControl)
-        #         climatizationAccessory.set_info_service(manufacturer=manufacturer, model=model, serial_number=f'{vin}-climatization')
-        #         self.set_config_item(climatizationAccessory.id, climatizationAccessory.vin, 'category', climatizationAccessory.category)
-        #         self.set_config_item(climatizationAccessory.id, climatizationAccessory.vin, 'services',
-        #                            [service.display_name for service in climatizationAccessory.services])
-        #         if climatizationAccessory.aid not in self.accessories:
-        #             self.add_accessory(climatizationAccessory)
-        #         else:
-        #             self.accessories[climatizationAccessory.aid] = climatizationAccessory
-        #         configChanged = True
-
-        #     if vehicle.statusExists('charging', 'chargingStatus'):
-        #         chargingStatus = vehicle.domains['charging']['chargingStatus']
-
-        #         if vehicle.statusExists('charging', 'plugStatus'):
-        #             plugStatus = vehicle.domains['charging']['plugStatus']
-        #         else:
-        #             plugStatus = None
-
-        #         if vehicle.statusExists('charging', 'batteryStatus'):
-        #             batteryStatus = vehicle.domains['charging']['batteryStatus']
-        #         else:
-        #             batteryStatus = None
 
         #         chargingAccessory = Charging(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin), id='Charging', vin=vin,
         #                                      displayName=f'{nickname} Charging', chargingStatus=chargingStatus, plugStatus=plugStatus,
