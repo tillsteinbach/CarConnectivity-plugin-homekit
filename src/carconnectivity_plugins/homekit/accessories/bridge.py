@@ -18,6 +18,7 @@ from carconnectivity_plugins.homekit.accessories.charging import ChargingAccesso
 from carconnectivity_plugins.homekit.accessories.charging_plug import ChargingPlugAccessory
 from carconnectivity_plugins.homekit.accessories.outside_temperature import OutsideTemperatureAccessory
 from carconnectivity_plugins.homekit.accessories.flashing import FlashingLightAccessory
+from carconnectivity_plugins.homekit.accessories.locking_system import LockingAccessory
 from carconnectivity_plugins.homekit._version import __version__
 
 
@@ -33,15 +34,15 @@ class CarConnectivityBridge(Bridge):
     """VWsfriend Bridge"""
 
     def __init__(self, car_connectivity: CarConnectivity, driver: AccessoryDriver, display_name: str = 'CarConnectivity',
-                 accessory_config_file: str = '~/.carconnectivity/homekit-accessory.config', ignore_vins: List[str] = [],
-                 ignore_accessory_types: List[str] = []) -> None:
+                 accessory_config_file: str = '~/.carconnectivity/homekit-accessory.config', ignore_vins: Optional[List[str]] = None,
+                 ignore_accessory_types: Optional[List[str]] = None) -> None:
         super().__init__(driver=driver, display_name=display_name, )
 
         self.set_info_service(f'{__carconnectivity_version__} (HomeKit Plugin {__version__})', 'Till Steinbach', 'CarConnectivity', None)
 
         self.car_connectivity: CarConnectivity = car_connectivity
-        self.ignore_vins: List[str] = ignore_vins
-        self.ignore_accessory_types: List[str] = ignore_accessory_types
+        self.ignore_vins: List[str] = ignore_vins or []
+        self.ignore_accessory_types: List[str] = ignore_accessory_types or []
 
         self.driver: AccessoryDriver = driver
 
@@ -139,10 +140,12 @@ class CarConnectivityBridge(Bridge):
             else:
                 vehicle_software_version: Optional[str] = None
             # Climatization
-            climatization_aid: int = self.select_aid('Climatization', vin)
+            climatization_aid: Optional[int] = self.get_existing_aid('Climatization', vin)
             if 'Climatization' not in self.ignore_accessory_types \
                     and vehicle.climatization is not None and vehicle.climatization.enabled \
-                    and (climatization_aid not in self.accessories or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory)):
+                    and (climatization_aid is None
+                         or climatization_aid not in self.accessories
+                         or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory)):
                 climatization_accessory = ClimatizationAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin),
                                                                  id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
                                                                  vehicle=vehicle)
@@ -160,10 +163,11 @@ class CarConnectivityBridge(Bridge):
                 config_changed = True
 
             # Charging
-            charging_aid: int = self.select_aid('Charging', vin)
+            charging_aid: Optional[int] = self.get_existing_aid('Charging', vin)
             if 'Charging' not in self.ignore_accessory_types \
                     and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
-                    and (charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory)):
+                    and (charging_aid is None
+                         or charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory)):
                 charging_accessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
                                                        id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)
                 charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
@@ -180,10 +184,10 @@ class CarConnectivityBridge(Bridge):
                 config_changed = True
 
             # ChargingPlug
-            plug_aid: int = self.select_aid('ChargingPlug', vin)
+            plug_aid: Optional[int] = self.get_existing_aid('ChargingPlug', vin)
             if 'ChargingPlug' not in self.ignore_accessory_types \
                     and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
-                    and (plug_aid not in self.accessories or not isinstance(self.accessories[plug_aid], ChargingPlugAccessory)):
+                    and (plug_aid is None or plug_aid not in self.accessories or not isinstance(self.accessories[plug_aid], ChargingPlugAccessory)):
                 charging_plug_accessory = ChargingPlugAccessory(driver=self.driver, bridge=self, aid=self.select_aid('ChargingPlug', vin),
                                                                 id_str='ChargingPlug', vin=vin, display_name=f'{name} Charging Plug', vehicle=vehicle)
                 charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
@@ -200,11 +204,12 @@ class CarConnectivityBridge(Bridge):
                 config_changed = True
 
             # OutsideTemperature
-            outside_temperature_aid: int = self.select_aid('OutsideTemperature', vin)
+            outside_temperature_aid: Optional[int] = self.get_existing_aid('OutsideTemperature', vin)
             if 'OutsideTemperature' not in self.ignore_accessory_types \
                     and vehicle.outside_temperature is not None and vehicle.outside_temperature.enabled \
-                    and (outside_temperature_aid not in self.accessories or not isinstance(self.accessories[outside_temperature_aid],
-                                                                                           OutsideTemperatureAccessory)):
+                    and (outside_temperature_aid is None
+                         or outside_temperature_aid not in self.accessories or not isinstance(self.accessories[outside_temperature_aid],
+                                                                                              OutsideTemperatureAccessory)):
                 outside_temperature_accessory = OutsideTemperatureAccessory(driver=self.driver, bridge=self, aid=self.select_aid('OutsideTemperature', vin),
                                                                             id_str='OutsideTemperature', vin=vin, display_name=f'{name} Outside Temperature',
                                                                             vehicle=vehicle)
@@ -223,11 +228,11 @@ class CarConnectivityBridge(Bridge):
                 config_changed = True
 
             # FlashingAccessory
-            flashing_light_aid: int = self.select_aid('FlashingLight', vin)
+            flashing_light_aid: Optional[int] = self.get_existing_aid('FlashingLight', vin)
             if 'FlashingLight' not in self.ignore_accessory_types \
                     and vehicle.commands is not None and vehicle.commands is not None and 'honk-flash' in vehicle.commands.commands \
-                    and (flashing_light_aid not in self.accessories or not isinstance(self.accessories[flashing_light_aid],
-                                                                                      FlashingLightAccessory)):
+                    and (flashing_light_aid is None or flashing_light_aid not in self.accessories or not isinstance(self.accessories[flashing_light_aid],
+                                                                                                                    FlashingLightAccessory)):
                 flashing_light_accessory = FlashingLightAccessory(driver=self.driver, bridge=self, aid=self.select_aid('FlashingLight', vin),
                                                                   id_str='FlashingLight', vin=vin, display_name=f'{name} Flashing',
                                                                   vehicle=vehicle)
@@ -244,51 +249,34 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[flashing_light_accessory.aid] = flashing_light_accessory
                 config_changed = True
+
+            # LockingAccessory
+            locking_aid: Optional[int] = self.get_existing_aid('Locking', vin)
+            if 'Locking' not in self.ignore_accessory_types \
+                    and vehicle.doors is not None and vehicle.doors.commands is not None \
+                    and 'lock-unlock' in vehicle.doors.commands.commands \
+                    and (locking_aid is None or locking_aid not in self.accessories or not isinstance(self.accessories[locking_aid],
+                                                                                                      LockingAccessory)):
+                locking_accessory = LockingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Locking', vin),
+                                                     id_str='Locking', vin=vin, display_name=f'{name} Locking',
+                                                     vehicle=vehicle)
+                locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                   serial_number=f'{vin}-locking')
+                self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'category', locking_accessory.category)
+                self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'services',
+                                     [service.display_name for service in locking_accessory.services])
+                # Add the accessory to the bridge if not known
+                if locking_accessory.aid not in self.accessories:
+                    self.add_accessory(locking_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                else:
+                    self.accessories[locking_accessory.aid] = locking_accessory
+                config_changed = True
+
         if config_changed:
             self.driver.config_changed()
             LOG.debug('Config changed, updating driver and persisting config')
             self.persist_config()
-
-
-                        
-
-
-
-
-        #     if vehicle.statusExists('access', 'accessStatus') and vehicle.domains['access']['accessStatus'].carCapturedTimestamp.enabled:
-        #         accessStatus = vehicle.domains['access']['accessStatus']
-
-        #         if vehicle.controls.accessControl is not None and vehicle.controls.accessControl.enabled:
-        #             accessControl = vehicle.controls.accessControl
-        #         else:
-        #             accessControl = None
-
-        #         lockingSystemAccessory = LockingSystem(driver=self.driver, bridge=self, aid=self.select_aid('LockingSystem', vin), id='LockingSystem', vin=vin,
-        #                                                displayName=f'{nickname} Locking System', accessStatus=accessStatus, accessControl=accessControl)
-        #         lockingSystemAccessory.set_info_service(manufacturer=manufacturer, model=model, serial_number=f'{vin}-locking_system')
-        #         self.set_config_item(lockingSystemAccessory.id, lockingSystemAccessory.vin, 'category', lockingSystemAccessory.category)
-        #         self.set_config_item(lockingSystemAccessory.id, lockingSystemAccessory.vin, 'services',
-        #                            [service.display_name for service in lockingSystemAccessory.services])
-        #         if lockingSystemAccessory.aid not in self.accessories:
-        #             self.add_accessory(lockingSystemAccessory)
-        #         else:
-        #             self.accessories[lockingSystemAccessory.aid] = lockingSystemAccessory
-        #         configChanged = True
-
-        #     if vehicle.controls.honkAndFlashControl is not None and vehicle.controls.honkAndFlashControl.enabled:
-        #         honkAndFlashControl = vehicle.controls.honkAndFlashControl
-
-        #         flashingAccessory = Flashing(driver=self.driver, bridge=self, aid=self.select_aid('Flashing', vin), id='Flashing', vin=vin,
-        #                                      displayName=f'{nickname} Flashing', flashControl=honkAndFlashControl)
-        #         flashingAccessory.set_info_service(manufacturer=manufacturer, model=model, serial_number=f'{vin}-flashing')
-        #         self.set_config_item(flashingAccessory.id, flashingAccessory.vin, 'category', flashingAccessory.category)
-        #         self.set_config_item(flashingAccessory.id, flashingAccessory.vin, 'services',
-        #                            [service.display_name for service in flashingAccessory.services])
-        #         if flashingAccessory.aid not in self.accessories:
-        #             self.add_accessory(flashingAccessory)
-        #         else:
-        #             self.accessories[flashingAccessory.aid] = flashingAccessory
-        #         configChanged = True
 
         #     if vehicle.statusExists('measurements', 'temperatureBatteryStatus') \
         #             and vehicle.domains['measurements']['temperatureBatteryStatus'].carCapturedTimestamp.enabled:
@@ -317,6 +305,24 @@ class CarConnectivityBridge(Bridge):
         #                 self.accessories[batteryTemperatureAccessory.aid] = batteryTemperatureAccessory
         #             configChanged = True
 
+    def get_existing_aid(self, id_str: str, vin: str) -> Optional[int]:
+        """
+        Retrieve the existing accessory ID (AID) for a given identifier string and vehicle identification number (VIN).
+
+        Args:
+            id_str (str): The identifier string associated with the accessory.
+            vin (str): The vehicle identification number.
+
+        Returns:
+            Optional[int]: The accessory ID (AID) if it exists, otherwise None.
+        """
+        identifier = f'{vin}-{id_str}'
+        aid: Optional[int] = None
+        if identifier in self.__accessory_config and 'aid' in self.__accessory_config[identifier] \
+                and self.__accessory_config[identifier]['aid'] is not None:
+            aid = self.__accessory_config[identifier]['aid']
+        return aid
+
     def select_aid(self, id_str: str, vin: str) -> int:
         """
         Selects or generates an accessory ID (aid) for a given accessory identifier.
@@ -333,17 +339,16 @@ class CarConnectivityBridge(Bridge):
         Returns:
             int: The accessory ID (aid) for the given accessory identifier.
         """
+        aid = self.get_existing_aid(id_str=id_str, vin=vin)
         identifier = f'{vin}-{id_str}'
-        if identifier in self.__accessory_config and 'aid' in self.__accessory_config[identifier] \
-                and self.__accessory_config[identifier]['aid'] is not None:
-            aid: int = self.__accessory_config[identifier]['aid']
-        else:
-            aid: int = self.next_aid
+        if aid is None:
+            new_aid: int = self.next_aid
             self.next_aid += 1
             if identifier in self.__accessory_config:
-                self.__accessory_config[identifier]['aid'] = aid
+                self.__accessory_config[identifier]['aid'] = new_aid
             else:
-                self.__accessory_config[identifier] = {'aid': aid}
+                self.__accessory_config[identifier] = {'aid': new_aid}
+            return new_aid
         return aid
 
     def set_config_item(self, id_str: str, vin: str, config_key: str, item: Any) -> None:
