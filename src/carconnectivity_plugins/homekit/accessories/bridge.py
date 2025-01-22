@@ -17,6 +17,7 @@ from carconnectivity_plugins.homekit.accessories.climatization import Climatizat
 from carconnectivity_plugins.homekit.accessories.charging import ChargingAccessory
 from carconnectivity_plugins.homekit.accessories.charging_plug import ChargingPlugAccessory
 from carconnectivity_plugins.homekit.accessories.outside_temperature import OutsideTemperatureAccessory
+from carconnectivity_plugins.homekit.accessories.flashing import FlashingLightAccessory
 from carconnectivity_plugins.homekit._version import __version__
 
 
@@ -219,6 +220,29 @@ class CarConnectivityBridge(Bridge):
                 # Replace the accessory if it is known but not of the correct type (was Dummy before)
                 else:
                     self.accessories[outside_temperature_accessory.aid] = outside_temperature_accessory
+                config_changed = True
+
+            # FlashingAccessory
+            flashing_light_aid: int = self.select_aid('FlashingLight', vin)
+            if 'FlashingLight' not in self.ignore_accessory_types \
+                    and vehicle.commands is not None and vehicle.commands is not None and 'honk-flash' in vehicle.commands.commands \
+                    and (flashing_light_aid not in self.accessories or not isinstance(self.accessories[flashing_light_aid],
+                                                                                      FlashingLightAccessory)):
+                flashing_light_accessory = FlashingLightAccessory(driver=self.driver, bridge=self, aid=self.select_aid('FlashingLight', vin),
+                                                                  id_str='FlashingLight', vin=vin, display_name=f'{name} Flashing',
+                                                                  vehicle=vehicle)
+                flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                          serial_number=f'{vin}-flashing-light')
+                self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'category',
+                                     flashing_light_accessory.category)
+                self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'services',
+                                     [service.display_name for service in flashing_light_accessory.services])
+                # Add the accessory to the bridge if not known
+                if flashing_light_accessory.aid not in self.accessories:
+                    self.add_accessory(flashing_light_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                else:
+                    self.accessories[flashing_light_accessory.aid] = flashing_light_accessory
                 config_changed = True
         if config_changed:
             self.driver.config_changed()
