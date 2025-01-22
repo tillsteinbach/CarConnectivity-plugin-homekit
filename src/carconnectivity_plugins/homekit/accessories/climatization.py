@@ -134,7 +134,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
             target_temperature_unit: Temperature = Temperature.C
             if self.char_temperature_display_units is not None:
                 target_temperature_unit = VALUE_TO_TEMPERATURE_UNIT[self.char_temperature_display_units.get_value()]
-            if self.char_target_temperature is not None:
+            if self.char_target_temperature is not None and element.enabled and element.value is not None:
                 self.char_target_temperature.set_value(element.temperature_in(unit=target_temperature_unit))
             LOG.info('targetTemperature Changed: %f', element.temperature_in(unit=target_temperature_unit))
         else:
@@ -200,7 +200,11 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
     def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
             if self.char_current_heating_cooling_state is not None:
-                if element.value == Climatization.ClimatizationState.HEATING:
+                if element.value is None:
+                    self.char_current_heating_cooling_state.set_value(0)
+                    if self.char_target_heating_cooling_state is not None:
+                        self.char_target_heating_cooling_state.set_value(0)
+                elif element.value == Climatization.ClimatizationState.HEATING:
                     self.char_current_heating_cooling_state.set_value(1)
                     if self.char_target_heating_cooling_state is not None:
                         self.char_target_heating_cooling_state.set_value(3)
@@ -229,6 +233,10 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
                     self.estimated_date_reached = element.value
                     self.__update_remaining_duration()
                     LOG.debug('Climatization estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
+                else:
+                    self.estimated_date_reached = None
+                    self.char_remaining_duration.set_value(0)
+                    LOG.debug('Climatization estimated date reached Changed: None')
         else:
             LOG.debug('Unsupported event %s', flags)
 

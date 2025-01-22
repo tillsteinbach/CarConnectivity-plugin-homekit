@@ -93,8 +93,10 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):
     def __on_cc_charging_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
             if self.char_on is not None:
-                if element.value in (Charging.ChargingState.OFF,
-                                     Charging.ChargingState.READY_FOR_CHARGING):
+                if element.value is None:
+                    self.char_on.set_value(0)
+                elif element.value in (Charging.ChargingState.OFF,
+                                       Charging.ChargingState.READY_FOR_CHARGING):
                     self.char_on.set_value(0)
                 elif element.value in (Charging.ChargingState.CHARGING,
                                        Charging.ChargingState.DISCHARGING,
@@ -135,6 +137,10 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):
                     self.estimated_date_reached = element.value
                     self.__update_remaining_duration()
                     LOG.debug('Charging estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
+                else:
+                    self.estimated_date_reached = None
+                    self.char_remaining_duration.set_value(0)
+                    LOG.debug('Charging estimated date reached Changed: None')
         else:
             LOG.debug('Unsupported event %s', flags)
 
@@ -153,17 +159,22 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):
                 self.update_remaining_duration_timer.start()
 
     def __on_cc_power_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, PowerAttribute):
+        if flags & Observable.ObserverEvent.VALUE_CHANGED:
             if self.char_consumption is not None:
-                self.char_consumption.set_value(element.power_in(unit=Power.W))
-                LOG.debug('Charging power Changed: %dW', element.power_in(unit=Power.W))
+                if isinstance(element, PowerAttribute) and element.value is not None:
+                    self.char_consumption.set_value(element.power_in(unit=Power.W))
+                    LOG.debug('Charging power Changed: %dW', element.power_in(unit=Power.W))
+                else:
+                    self.char_consumption.set_value(0)
         else:
             LOG.debug('Unsupported event %s', flags)
 
     def __on_cc_connector_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
             if self.char_outlet_in_use is not None:
-                if element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
+                if element.value is None:
+                    self.char_outlet_in_use.set_value(False)
+                elif element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
                     self.char_outlet_in_use.set_value(True)
                 elif element.value in (ChargingConnector.ChargingConnectorConnectionState.DISCONNECTED,
                                        ChargingConnector.ChargingConnectorConnectionState.INVALID,
