@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from carconnectivity_plugins.homekit.accessories.bridge import CarConnectivityBridge
 
 
-LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.charging")
+LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.charging_plug")
 
 
 class ChargingPlugAccessory(GenericAccessory):

@@ -114,7 +114,7 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):
 
     def __on_hk_on_change(self, value: Any) -> None:
         try:
-            if self.charging_start_stop_command is not None:
+            if self.charging_start_stop_command is not None and self.charging_start_stop_command.enabled:
                 if value in [1, 2, 3]:
                     LOG.info('Switch charging on')
                     command_args: Dict[str, Any] = {}

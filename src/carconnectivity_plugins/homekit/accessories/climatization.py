@@ -156,7 +156,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
 
     def __on_hk_target_heating_cooling_state_changed(self, value: int) -> None:
         try:
-            if self.climatization_start_stop_command is not None:
+            if self.climatization_start_stop_command is not None and self.climatization_start_stop_command.enabled:
                 if value == 1 or value == 2 or value == 3:
                     LOG.info('Switch climatization on')
                     command_args: Dict[str, Any] = {}
