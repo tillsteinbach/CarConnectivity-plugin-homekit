@@ -15,6 +15,8 @@ from carconnectivity._version import __version__ as __carconnectivity_version__
 from carconnectivity_plugins.homekit.accessories.dummy_accessory import DummyAccessory
 from carconnectivity_plugins.homekit.accessories.climatization import ClimatizationAccessory
 from carconnectivity_plugins.homekit.accessories.charging import ChargingAccessory
+from carconnectivity_plugins.homekit.accessories.charging_plug import ChargingPlugAccessory
+from carconnectivity_plugins.homekit.accessories.outside_temperature import OutsideTemperatureAccessory
 from carconnectivity_plugins.homekit._version import __version__
 
 
@@ -175,40 +177,59 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[charging_accessory.aid] = charging_accessory
                 config_changed = True
+
+            # ChargingPlug
+            plug_aid: int = self.select_aid('ChargingPlug', vin)
+            if 'ChargingPlug' not in self.ignore_accessory_types \
+                    and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
+                    and (plug_aid not in self.accessories or not isinstance(self.accessories[plug_aid], ChargingPlugAccessory)):
+                charging_plug_accessory = ChargingPlugAccessory(driver=self.driver, bridge=self, aid=self.select_aid('ChargingPlug', vin),
+                                                                id_str='ChargingPlug', vin=vin, display_name=f'{name} Charging Plug', vehicle=vehicle)
+                charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                         serial_number=f'{vin}-charging-plug')
+                self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'category', charging_plug_accessory.category)
+                self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'services',
+                                     [service.display_name for service in charging_plug_accessory.services])
+                # Add the accessory to the bridge if not known
+                if charging_plug_accessory.aid not in self.accessories:
+                    self.add_accessory(charging_plug_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                else:
+                    self.accessories[charging_plug_accessory.aid] = charging_plug_accessory
+                config_changed = True
+
+            # OutsideTemperature
+            outside_temperature_aid: int = self.select_aid('OutsideTemperature', vin)
+            if 'OutsideTemperature' not in self.ignore_accessory_types \
+                    and vehicle.outside_temperature is not None and vehicle.outside_temperature.enabled \
+                    and (outside_temperature_aid not in self.accessories or not isinstance(self.accessories[outside_temperature_aid],
+                                                                                           OutsideTemperatureAccessory)):
+                outside_temperature_accessory = OutsideTemperatureAccessory(driver=self.driver, bridge=self, aid=self.select_aid('OutsideTemperature', vin),
+                                                                            id_str='OutsideTemperature', vin=vin, display_name=f'{name} Outside Temperature',
+                                                                            vehicle=vehicle)
+                outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                               serial_number=f'{vin}-outside-temperature')
+                self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'category',
+                                     outside_temperature_accessory.category)
+                self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'services',
+                                     [service.display_name for service in outside_temperature_accessory.services])
+                # Add the accessory to the bridge if not known
+                if outside_temperature_accessory.aid not in self.accessories:
+                    self.add_accessory(outside_temperature_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                else:
+                    self.accessories[outside_temperature_accessory.aid] = outside_temperature_accessory
+                config_changed = True
         if config_changed:
             self.driver.config_changed()
             LOG.debug('Config changed, updating driver and persisting config')
             self.persist_config()
 
+
                         
 
 
 
-        #         chargingAccessory = Charging(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin), id='Charging', vin=vin,
-        #                                      displayName=f'{nickname} Charging', chargingStatus=chargingStatus, plugStatus=plugStatus,
-        #                                      batteryStatus=batteryStatus, chargingControl=vehicle.controls.chargingControl)
-        #         chargingAccessory.set_info_service(manufacturer=manufacturer, model=model, serial_number=f'{vin}-charging')
-        #         self.set_config_item(chargingAccessory.id, chargingAccessory.vin, 'category', chargingAccessory.category)
-        #         self.set_config_item(chargingAccessory.id, chargingAccessory.vin, 'services', [service.display_name for service in chargingAccessory.services])
-        #         if chargingAccessory.aid not in self.accessories:
-        #             self.add_accessory(chargingAccessory)
-        #         else:
-        #             self.accessories[chargingAccessory.aid] = chargingAccessory
-        #         configChanged = True
-
-        #     if vehicle.statusExists('charging', 'plugStatus'):
-        #         plugStatus = vehicle.domains['charging']['plugStatus']
-
-        #         plugAccessory = Plug(driver=self.driver, bridge=self, aid=self.select_aid('ChargingPlug', vin), id='ChargingPlug', vin=vin,
-        #                              displayName=f'{nickname} Charging Plug', plugStatus=plugStatus)
-        #         plugAccessory.set_info_service(manufacturer=manufacturer, model=model, serial_number=f'{vin}-charging_plug')
-        #         self.set_config_item(plugAccessory.id, plugAccessory.vin, 'category', plugAccessory.category)
-        #         self.set_config_item(plugAccessory.id, plugAccessory.vin, 'services', [service.display_name for service in plugAccessory.services])
-        #         if plugAccessory.aid not in self.accessories:
-        #             self.add_accessory(plugAccessory)
-        #         else:
-        #             self.accessories[plugAccessory.aid] = plugAccessory
-        #         configChanged = True
 
         #     if vehicle.statusExists('access', 'accessStatus') and vehicle.domains['access']['accessStatus'].carCapturedTimestamp.enabled:
         #         accessStatus = vehicle.domains['access']['accessStatus']

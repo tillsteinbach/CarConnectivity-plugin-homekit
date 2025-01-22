@@ -6,8 +6,6 @@ import logging
 import threading
 from datetime import datetime, timezone
 
-
-from pyhap.accessory_driver import AccessoryDriver
 from pyhap.characteristic import Characteristic
 from pyhap.const import CATEGORY_AIR_CONDITIONER
 
@@ -27,6 +25,7 @@ if TYPE_CHECKING:
     from typing import Optional, Any, Dict
 
     from pyhap.service import Service
+    from pyhap.accessory_driver import AccessoryDriver
 
     from carconnectivity.vehicle import GenericVehicle
 
@@ -250,6 +249,6 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
             if self.estimated_date_reached is not None and self.estimated_date_reached > utc_now:
                 remaining_duration = round((self.estimated_date_reached - utc_now).total_seconds())
             self.char_remaining_duration.set_value(remaining_duration)
-            if remaining_duration > 0:
+            if remaining_duration > 0 and not self.driver.stop_event.is_set():
                 self.update_remaining_duration_timer = threading.Timer(interval=5.0, function=self.__update_remaining_duration)
                 self.update_remaining_duration_timer.start()

@@ -36,7 +36,7 @@ class Plugin(BasePlugin):
         BasePlugin.__init__(self, plugin_id=plugin_id, car_connectivity=car_connectivity, config=config)
 
         self._background_thread: Optional[threading.Thread] = None
-        self._stop_event = threading.Event()
+        self.stop_event = threading.Event()
 
         # Configure logging
         if 'log_level' in config and config['log_level'] is not None:
@@ -85,7 +85,7 @@ class Plugin(BasePlugin):
             ignore_vins: List[str] = config['ignore_vins']
         else:
             ignore_vins = []
-        
+
         if 'ignore_accessory_types' in config and config['ignore_accessory_types'] is not None:
             ignore_accessory_types: List[str] = config['ignore_accessory_types']
         else:
@@ -111,14 +111,15 @@ class Plugin(BasePlugin):
         LOG.debug("Starting Homekit plugin done")
 
     def __delayed_update(self) -> None:
-        self._stop_event.wait(5.0)
-        if not self._stop_event.is_set():
+        self.stop_event.wait(5.0)
+        if not self.stop_event.is_set():
             self._bridge.install_observers()
             if self.car_connectivity.garage is not None:
                 for vehicle in self.car_connectivity.garage.list_vehicles():
                     self._bridge.update(vehicle=vehicle)
 
     def shutdown(self) -> None:
+        self.stop_event.set()
         self._driver.stop()
         if self._background_thread is not None:
             self._background_thread.join()
