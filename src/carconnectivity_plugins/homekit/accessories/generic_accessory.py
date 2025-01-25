@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.generic_accessory")
 
 
-class GenericAccessory(Accessory):
+class GenericAccessory(Accessory):  # pylint: disable=too-many-instance-attributes
     """
     GenericAccessory is a class that represents a generic accessory in a HomeKit environment.
 
@@ -40,6 +40,7 @@ class GenericAccessory(Accessory):
         char_configured_name (Optional[Characteristic]): The characteristic for configured name.
         char_name (Optional[Characteristic]): The characteristic for name.
     """
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str) -> None:
         super().__init__(driver=driver, display_name=display_name, aid=aid)
 
@@ -152,6 +153,7 @@ class GenericAccessory(Accessory):
 class BatteryGenericVehicleAccessory(GenericAccessory):
     """Vehcile Accessory with battery characteristics"""
 
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str)

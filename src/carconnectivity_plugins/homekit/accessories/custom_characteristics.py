@@ -1,3 +1,5 @@
+""" Definitions for custom characteristics """
+
 CUSTOM_CHARACTERISTICS = {
     "Consumption": {
         "Format": "uint32",

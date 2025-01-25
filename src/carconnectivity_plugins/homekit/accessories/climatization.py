@@ -34,11 +34,12 @@ if TYPE_CHECKING:
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.climatization")
 
 
-class ClimatizationAccessory(BatteryGenericVehicleAccessory):
+class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-many-instance-attributes
     """Climatization Accessory"""
 
     category: int = CATEGORY_AIR_CONDITIONER
 
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,too-many-branches,too-many-statements
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str, vehicle=vehicle)
@@ -157,7 +158,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
     def __on_hk_target_heating_cooling_state_changed(self, value: int) -> None:
         try:
             if self.climatization_start_stop_command is not None and self.climatization_start_stop_command.enabled:
-                if value == 1 or value == 2 or value == 3:
+                if value in (1, 2, 3):
                     LOG.info('Switch climatization on')
                     command_args: Dict[str, Any] = {}
                     command_args['command'] = ClimatizationStartStopCommand.Command.START
@@ -207,8 +208,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):
                     self.char_current_heating_cooling_state.set_value(1)
                     if self.char_target_heating_cooling_state is not None:
                         self.char_target_heating_cooling_state.set_value(3)
-                elif element.value == Climatization.ClimatizationState.COOLING \
-                        or element.value == Climatization.ClimatizationState.VENTILATION:
+                elif element.value in (Climatization.ClimatizationState.COOLING, Climatization.ClimatizationState.VENTILATION):
                     self.char_current_heating_cooling_state.set_value(2)
                     if self.char_target_heating_cooling_state is not None:
                         self.char_target_heating_cooling_state.set_value(3)
