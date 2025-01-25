@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 import logging
 from threading import Timer
 
-from carconnectivity.commands import GenericCommand
 from pyhap.characteristic import Characteristic
 from pyhap.const import CATEGORY_LIGHTBULB
 
+from carconnectivity.commands import GenericCommand
 from carconnectivity.errors import SetterError
 from carconnectivity.command_impl import HonkAndFlashCommand
 
@@ -74,4 +74,3 @@ class FlashingLightAccessory(GenericAccessory):
             if self.char_on is not None:
                 self.char_on.set_value(False)
             self.set_status_fault(1, timeout=120)
-
