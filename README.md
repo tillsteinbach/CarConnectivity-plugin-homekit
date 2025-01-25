@@ -46,6 +46,25 @@ After CarConnectivity is started the first time with the Homekit plugin enabled 
 CarConnectivity with Homekit will need Host or Macvlan Mode for the container. This is necessary as the bridge mode will not forward multicast which is necessary for Homekit to work. Host mode is not working on macOS. The reson is that the network is still virtualized.
 If you do not like to share the host network with CarConnectivity you can use macvlan mode. In macvlan mode CarConnectivity will appear as a seperate computer in the network.
 
+### Example Docker Compose configuration
+The following configuration uses host mode network
+```
+services:
+  carconnectivity:
+    image: "tillsteinbach/carconnectivity-mqtt:latest"
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      - LANG=de_DE
+      - LC_ALL=de_DE
+      - ADDITIONAL_INSTALLS=--pre carconnectivity-connector-skoda carconnectivity-plugin-homekit
+    network_mode: host
+    volumes:
+      - /home/myuser/docker-compose/smarthome/carconnectivity/carconnectivity.json:/carconnectivity.json
+      - carconnectivity_data:/root/.carconnectivity
+volumes:
+  carconnectivity_data:
+```
 ## Updates
 If you want to update, the easiest way is:
 ```bash
