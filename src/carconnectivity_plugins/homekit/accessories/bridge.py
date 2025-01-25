@@ -33,7 +33,7 @@ LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.bridge"
 class CarConnectivityBridge(Bridge):
     """VWsfriend Bridge"""
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, car_connectivity: CarConnectivity, driver: AccessoryDriver, display_name: str = 'CarConnectivity',
                  accessory_config_file: str = '~/.carconnectivity/homekit-accessory.config', ignore_vins: Optional[List[str]] = None,
                  ignore_accessory_types: Optional[List[str]] = None) -> None:

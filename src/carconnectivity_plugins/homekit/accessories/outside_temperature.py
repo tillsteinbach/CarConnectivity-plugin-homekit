@@ -31,6 +31,7 @@ class OutsideTemperatureAccessory(GenericAccessory):
     """Outside Temperature Accessory"""
     category: int = CATEGORY_SENSOR
 
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,duplicate-code
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str)
@@ -64,6 +65,7 @@ class OutsideTemperatureAccessory(GenericAccessory):
             self.vehicle.outside_temperature.add_observer(self.__on_cc_outside_temperature_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
             self.char_current_temperature = self.service.configure_char('CurrentTemperature')
             self.__on_cc_outside_temperature_change(self.vehicle.outside_temperature, Observable.ObserverEvent.VALUE_CHANGED)
+    # pylint: disable=duplicate-code
 
     def __on_cc_outside_temperature_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):

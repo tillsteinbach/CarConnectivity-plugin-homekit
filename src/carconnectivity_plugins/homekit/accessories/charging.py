@@ -36,11 +36,12 @@ if TYPE_CHECKING:
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.charging")
 
 
-class ChargingAccessory(BatteryGenericVehicleAccessory):
+class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-many-instance-attributes
     """Charging Accessory"""
 
     category: int = CATEGORY_OUTLET
 
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str, vehicle=vehicle)
@@ -145,6 +146,7 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):
         else:
             LOG.debug('Unsupported event %s', flags)
 
+    # pylint: disable=duplicate-code
     def __update_remaining_duration(self) -> None:
         if self.update_remaining_duration_timer is not None:
             self.update_remaining_duration_timer.cancel()
@@ -158,6 +160,7 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):
             if remaining_duration > 0 and not self.driver.stop_event.is_set():
                 self.update_remaining_duration_timer = threading.Timer(interval=5.0, function=self.__update_remaining_duration)
                 self.update_remaining_duration_timer.start()
+    # pylint: enable=duplicate-code
 
     def __on_cc_power_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.VALUE_CHANGED:

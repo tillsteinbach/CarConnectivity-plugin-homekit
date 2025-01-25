@@ -39,7 +39,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
 
     category: int = CATEGORY_AIR_CONDITIONER
 
-    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,too-many-branches,too-many-statements
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,too-many-branches,too-many-statements,duplicate-code
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str, vehicle=vehicle)
@@ -120,6 +120,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
             self.add_soc_characteristic()
         else:
             self.vehicle.add_observer(self.__on_cc_car_type_change, flag=Observable.ObserverEvent.UPDATED)
+    # pylint: disable=duplicate-code
 
     def __on_cc_car_type_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         if flags & Observable.ObserverEvent.UPDATED:
@@ -197,7 +198,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
             elif self.configured_temperature_unit == Temperature.F:
                 self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': 0.5, 'minValue': 61})
 
-    def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+    def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:  # pylint: disable=too-many-branches
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
             if self.char_current_heating_cooling_state is not None:
                 if element.value is None:
@@ -239,6 +240,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
         else:
             LOG.debug('Unsupported event %s', flags)
 
+    # pylint: disable=duplicate-code
     def __update_remaining_duration(self) -> None:
         if self.update_remaining_duration_timer is not None:
             self.update_remaining_duration_timer.cancel()
@@ -252,3 +254,4 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
             if remaining_duration > 0 and not self.driver.stop_event.is_set():
                 self.update_remaining_duration_timer = threading.Timer(interval=5.0, function=self.__update_remaining_duration)
                 self.update_remaining_duration_timer.start()
+    # pylint: enable=duplicate-code

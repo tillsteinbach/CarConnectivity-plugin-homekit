@@ -27,6 +27,6 @@ class DummyAccessory(Accessory):
     def __init__(self, driver, aid, display_name) -> None:
         super().__init__(driver=driver, display_name=display_name, aid=aid)
 
-    @Accessory.available.getter
+    @property
     def available(self) -> Literal[False]:
         return False
