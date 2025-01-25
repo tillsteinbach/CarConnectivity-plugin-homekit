@@ -31,7 +31,8 @@ class OutsideTemperatureAccessory(GenericAccessory):
     """Outside Temperature Accessory"""
     category: int = CATEGORY_SENSOR
 
-    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,duplicate-code
+    # pylint: disable=duplicate-code
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str)

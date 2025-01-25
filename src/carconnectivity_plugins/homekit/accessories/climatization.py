@@ -39,7 +39,8 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
 
     category: int = CATEGORY_AIR_CONDITIONER
 
-    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,too-many-branches,too-many-statements,duplicate-code
+    # pylint: disable=duplicate-code
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,too-many-branches,too-many-statements
     def __init__(self, driver: AccessoryDriver, bridge: CarConnectivityBridge, aid: int, id_str: str, vin: str, display_name: str,
                  vehicle: GenericVehicle) -> None:
         super().__init__(driver=driver, bridge=bridge, display_name=display_name, aid=aid, vin=vin, id_str=id_str, vehicle=vehicle)
