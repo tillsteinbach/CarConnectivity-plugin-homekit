@@ -8,7 +8,7 @@
                 "disabled": false,
                 "config": {
                     "log_level": "debug",
-                    "port": -1,
+                    "port": -1
                 }
             }
         ]
