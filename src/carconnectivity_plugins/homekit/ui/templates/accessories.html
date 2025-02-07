@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}HomeKit Accessories {% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+Initialized HomeKit Accessories:
+  <p>
+    <ul>
+    {% for accessory in homekit_plugin._driver.accessory.accessories.values() %}
+      <li><strong>{{ accessory.display_name }}</strong> (AID: {{ accessory.aid }})<br/> Services:
+        <ul>{% for service in accessory.services %}
+          <li>{{service.display_name}}</li>
+            {% endfor %}
+        </ul>
+      </li>
+    {% endfor %}
+    </ul>
+  </p>
+{% endblock %}

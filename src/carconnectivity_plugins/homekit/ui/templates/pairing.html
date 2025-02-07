@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}HomeKit Pairing {% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <p>To connect your Home to the vehciles managed by CarConenctivity please scan the following QR Code with the Home App on your smartphone.</p>
+  <img src="{{ url_for('plugins.homekit.homekit_qr') }}" id="homekitQR"/>
+  <p>You can also manually add the Bridge <strong>{{ homekit_plugin._driver.accessory.display_name }}</strong> with the Passcode: <strong>{{ homekit_plugin._driver.state.pincode.decode('utf8') }}</strong></p>
+  <h2>Status:</h2>
+  <p>
+    <form method="POST">
+      {{ form.csrf_token }}
+    The bridge is currently {{ 'paired' if homekit_plugin._driver.state.paired else 'unpaired' }}<br/>
+    {{ form.unpair(disabled=(not homekit_plugin._driver.state.paired)) }}
+    </form>
+  </p>
+{% endblock %}
