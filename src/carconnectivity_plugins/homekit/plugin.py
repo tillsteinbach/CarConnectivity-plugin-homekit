@@ -129,4 +129,9 @@ class Plugin(BasePlugin):
         return __version__
 
     def get_type(self) -> str:
+        """
+        Returns the type of the plugin.
+
+        :return: A string representing the type of the plugin.
+        """
         return "carconnectivity-plugin-homekit"
