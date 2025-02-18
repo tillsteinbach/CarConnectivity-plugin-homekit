@@ -19,7 +19,7 @@ from carconnectivity_plugins.homekit.accessories.custom_characteristics import C
 from carconnectivity_plugins.homekit.accessories.bridge import CarConnectivityBridge
 
 if TYPE_CHECKING:
-    from typing import Dict, Optional, List
+    from typing import Dict, Optional
     from carconnectivity.carconnectivity import CarConnectivity
 
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit")
@@ -33,32 +33,24 @@ class Plugin(BasePlugin):
         config (Dict): Configuration dictionary containing connection details.
     """
     def __init__(self, plugin_id: str, car_connectivity: CarConnectivity, config: Dict) -> None:  # pylint: disable=too-many-branches, too-many-statements
-        BasePlugin.__init__(self, plugin_id=plugin_id, car_connectivity=car_connectivity, config=config)
+        BasePlugin.__init__(self, plugin_id=plugin_id, car_connectivity=car_connectivity, config=config, log=LOG)
 
         self._background_thread: Optional[threading.Thread] = None
         self.stop_event = threading.Event()
 
-        # Configure logging
-        if 'log_level' in config and config['log_level'] is not None:
-            config['log_level'] = config['log_level'].upper()
-            if config['log_level'] in logging._nameToLevel:
-                LOG.setLevel(config['log_level'])
-                self.log_level._set_value(config['log_level'])  # pylint: disable=protected-access
-            else:
-                raise ConfigurationError(f'Invalid log level: "{config["log_level"]}" not in {list(logging._nameToLevel.keys())}')
-        LOG.info("Loading homekit plugin with config %s", config_remove_credentials(self.config))
+        LOG.info("Loading homekit plugin with config %s", config_remove_credentials(config))
 
         if 'address' in config and config['address'] is not None:
-            address: Optional[str] = config['address']
+            self.active_config['address'] = config['address']
         else:
-            address = None
+            self.active_config['address'] = None
 
         if 'port' in config and config['port'] is not None:
-            port: int = config['port']
-            if port > 65535 or port < 1:
-                raise ConfigurationError(f'Invalid port: "{port}" not in range 1-65535')
+            self.active_config['port'] = config['port']
+            if self.active_config['port'] > 65535 or self.active_config['port'] < 1:
+                raise ConfigurationError(f'Invalid port: "{self.active_config['port']}" not in range 1-65535')
         else:
-            port = 51234
+            self.active_config['port'] = 51234
 
         if 'pincode' in config and config['pincode'] is not None:
             pincode: Optional[str] = config['pincode']
@@ -68,37 +60,39 @@ class Plugin(BasePlugin):
             pincode = None
 
         if 'accessory_state_file' in config and config['accessory_state_file'] is not None:
-            accessory_state_file: str = os.path.expanduser(config['accessory_state_file'])
+            self.active_config['accessory_state_file'] = os.path.expanduser(config['accessory_state_file'])
         else:
-            accessory_state_file: str = os.path.expanduser('~/.carconnectivity/homekit-accessory.state')
-        file = Path(accessory_state_file)
+            self.active_config['accessory_state_file'] = os.path.expanduser('~/.carconnectivity/homekit-accessory.state')
+        file = Path(self.active_config['accessory_state_file'])
         file.parent.mkdir(parents=True, exist_ok=True)
 
         if 'accessory_config_file' in config and config['accessory_config_file'] is not None:
-            accessory_config_file: str = os.path.expanduser(config['accessory_config_file'])
+            self.active_config['accessory_config_file'] = os.path.expanduser(config['accessory_config_file'])
         else:
-            accessory_config_file: str = os.path.expanduser('~/.carconnectivity/homekit-accessory.config')
-        file = Path(accessory_config_file)
+            self.active_config['accessory_config_file'] = os.path.expanduser('~/.carconnectivity/homekit-accessory.config')
+        file = Path(self.active_config['accessory_config_file'])
         file.parent.mkdir(parents=True, exist_ok=True)
 
         if 'ignore_vins' in config and config['ignore_vins'] is not None:
-            ignore_vins: List[str] = config['ignore_vins']
+            self.active_config['ignore_vins'] = config['ignore_vins']
         else:
-            ignore_vins = []
+            self.active_config['ignore_vins'] = []
 
         if 'ignore_accessory_types' in config and config['ignore_accessory_types'] is not None:
-            ignore_accessory_types: List[str] = config['ignore_accessory_types']
+            self.active_config['ignore_accessory_types'] = config['ignore_accessory_types']
         else:
-            ignore_accessory_types = []
+            self.active_config['ignore_accessory_types'] = []
 
         # Add the accessory driver
-        self._driver = AccessoryDriver(address=address, port=port, pincode=pincode, persist_file=accessory_state_file)
+        self._driver = AccessoryDriver(address=self.active_config['address'], port=self.active_config['port'], pincode=pincode,
+                                       persist_file=self.active_config['accessory_state_file'])
 
         for characteristic_key, characteristic in CUSTOM_CHARACTERISTICS.items():
             self._driver.loader.char_types[characteristic_key] = characteristic
 
-        self._bridge = CarConnectivityBridge(driver=self._driver, car_connectivity=car_connectivity, accessory_config_file=accessory_config_file,
-                                             ignore_vins=ignore_vins, ignore_accessory_types=ignore_accessory_types)
+        self._bridge = CarConnectivityBridge(driver=self._driver, car_connectivity=car_connectivity,
+                                             accessory_config_file=self.active_config['accessory_config_file'],
+                                             ignore_vins=self.active_config['ignore_vins'], ignore_accessory_types=self.active_config['ignore_accessory_types'])
         self._driver.add_accessory(self._bridge)
 
     def startup(self) -> None:

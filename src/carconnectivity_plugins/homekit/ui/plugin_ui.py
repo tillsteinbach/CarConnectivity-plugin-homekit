@@ -30,9 +30,9 @@ class PluginUI(BasePluginUI):
     A user interface class for the HomeKit plugin in the Car Connectivity application.
     """
     def __init__(self, plugin: BasePlugin):
-        super().__init__(plugin)
-        self.blueprint: Optional[flask.Blueprint] = flask.Blueprint(name='homekit', import_name='carconnectivity-plugin-homekit', url_prefix='/homekit',
+        blueprint: Optional[flask.Blueprint] = flask.Blueprint(name='homekit', import_name='carconnectivity-plugin-homekit', url_prefix='/homekit',
                                                                     template_folder=os.path.dirname(__file__) + '/templates')
+        super().__init__(plugin, blueprint=blueprint)
 
         @self.blueprint.route('/status', methods=['GET'])
         @login_required
@@ -109,8 +109,8 @@ class PluginUI(BasePluginUI):
         """
         Generates a list of navigation items for the HomeKit plugin UI.
         """
-        return [{"text": "Pairing", "url": flask.url_for('plugins.homekit.pairing')},
-                {"text": "Accessories", "url": flask.url_for('plugins.homekit.accessories')},]
+        return super().get_nav_items() + [{"text": "Pairing", "url": flask.url_for('plugins.homekit.pairing')},
+                                          {"text": "Accessories", "url": flask.url_for('plugins.homekit.accessories')},]
 
     def get_title(self) -> str:
         """
