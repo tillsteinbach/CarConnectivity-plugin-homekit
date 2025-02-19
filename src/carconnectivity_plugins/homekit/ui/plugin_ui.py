@@ -51,40 +51,31 @@ class PluginUI(BasePluginUI):
         @self.blueprint.route('/pairing', methods=['GET', 'POST'])
         @login_required
         def pairing():
-            car_connectivity: Optional[CarConnectivity] = flask.current_app.extensions['car_connectivity']
-            if car_connectivity is not None:
-                if 'homekit' in car_connectivity.plugins.plugins and car_connectivity.plugins.plugins['homekit'] is not None \
-                        and isinstance(car_connectivity.plugins.plugins['homekit'], Plugin):
-                    plugin: Plugin = car_connectivity.plugins.plugins['homekit']
+            if isinstance(self.plugin, Plugin):
+                plugin: Plugin = self.plugin
 
-                    form = HomekitForm()
+                form = HomekitForm()
 
-                    if form.unpair.data:
-                        clients: list[UUID] = list(plugin._driver.state.paired_clients.keys()).copy()  # pylint: disable=protected-access
-                        for client in clients:
-                            try:
-                                asyncio.get_event_loop()
-                            except RuntimeError as ex:
-                                if "There is no current event loop in thread" in str(ex):
-                                    loop: AbstractEventLoop = asyncio.new_event_loop()
-                                    asyncio.set_event_loop(loop)
-                            plugin._driver.unpair(client)  # pylint: disable=protected-access
-                        plugin._driver.config_changed()  # pylint: disable=protected-access
-                        flask.flash('Unpaired the Homekit bridge. You can now pair again')
+                if form.unpair.data:
+                    clients: list[UUID] = list(plugin._driver.state.paired_clients.keys()).copy()  # pylint: disable=protected-access
+                    for client in clients:
+                        try:
+                            asyncio.get_event_loop()
+                        except RuntimeError as ex:
+                            if "There is no current event loop in thread" in str(ex):
+                                loop: AbstractEventLoop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                        plugin._driver.unpair(client)  # pylint: disable=protected-access
+                    plugin._driver.config_changed()  # pylint: disable=protected-access
+                    flask.flash('Unpaired the Homekit bridge. You can now pair again')
 
-                    return flask.render_template('pairing.html', form=form, current_app=flask.current_app, homekit_plugin=plugin)
-            return flask.abort(500, "HomeKit plugin not found or wrong structure.")
+                return flask.render_template('pairing.html', form=form, current_app=flask.current_app, homekit_plugin=plugin)
+            return flask.abort(500, "HomeKit plugin not found")
 
         @self.blueprint.route('/accessories', methods=['GET'])
         @login_required
         def accessories():
-            car_connectivity: Optional[CarConnectivity] = flask.current_app.extensions['car_connectivity']
-            if car_connectivity is not None:
-                if 'homekit' in car_connectivity.plugins.plugins and car_connectivity.plugins.plugins['homekit'] is not None \
-                        and isinstance(car_connectivity.plugins.plugins['homekit'], Plugin):
-                    plugin: Plugin = car_connectivity.plugins.plugins['homekit']
-                    return flask.render_template('accessories.html', current_app=flask.current_app, homekit_plugin=plugin)
-            return flask.abort(500, "HomeKit plugin not found or wrong structure.")
+            return flask.render_template('accessories.html', current_app=flask.current_app, homekit_plugin=self.plugin)
 
         @self.blueprint.route('/homekit-qr.png', methods=['GET'])
         @login_required
