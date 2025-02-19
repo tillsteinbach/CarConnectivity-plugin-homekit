@@ -48,7 +48,7 @@ class Plugin(BasePlugin):
         if 'port' in config and config['port'] is not None:
             self.active_config['port'] = config['port']
             if self.active_config['port'] > 65535 or self.active_config['port'] < 1:
-                raise ConfigurationError(f'Invalid port: "{self.active_config['port']}" not in range 1-65535')
+                raise ConfigurationError(f'Invalid port: "{self.active_config["port"]}" not in range 1-65535')
         else:
             self.active_config['port'] = 51234
 
