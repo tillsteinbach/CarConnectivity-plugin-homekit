@@ -34,11 +34,6 @@ class PluginUI(BasePluginUI):
                                                                     template_folder=os.path.dirname(__file__) + '/templates')
         super().__init__(plugin, blueprint=blueprint)
 
-        @self.blueprint.route('/status', methods=['GET'])
-        @login_required
-        def status():
-            return flask.render_template('plugins/status.html', current_app=flask.current_app)
-
         class HomekitForm(FlaskForm):
             """
             HomekitForm class for handling the Homekit unpairing form.
@@ -47,6 +42,10 @@ class PluginUI(BasePluginUI):
                 unpair (SubmitField): A submit button labeled 'Unpair' for initiating the unpairing process.
             """
             unpair = SubmitField('Unpair')
+
+        @self.blueprint.route('/', methods=['GET'])
+        def root():
+            return flask.redirect(flask.url_for('plugins.homekit.pairing'))
 
         @self.blueprint.route('/pairing', methods=['GET', 'POST'])
         @login_required
@@ -69,13 +68,13 @@ class PluginUI(BasePluginUI):
                     plugin._driver.config_changed()  # pylint: disable=protected-access
                     flask.flash('Unpaired the Homekit bridge. You can now pair again')
 
-                return flask.render_template('pairing.html', form=form, current_app=flask.current_app, homekit_plugin=plugin)
+                return flask.render_template('homekit/pairing.html', form=form, current_app=flask.current_app, homekit_plugin=plugin)
             return flask.abort(500, "HomeKit plugin not found")
 
         @self.blueprint.route('/accessories', methods=['GET'])
         @login_required
         def accessories():
-            return flask.render_template('accessories.html', current_app=flask.current_app, homekit_plugin=self.plugin)
+            return flask.render_template('homekit/accessories.html', current_app=flask.current_app, homekit_plugin=self.plugin)
 
         @self.blueprint.route('/homekit-qr.png', methods=['GET'])
         @login_required
