@@ -98,6 +98,7 @@ class Plugin(BasePlugin):
     def startup(self) -> None:
         LOG.info("Starting Homekit plugin")
         self._background_thread = threading.Thread(target=self._driver.start, daemon=False)
+        self._background_thread.name = 'carconnectivity.plugins.homekit-background'
         self._background_thread.start()
         update_thread = threading.Timer(interval=5.0, function=self.__delayed_update)
         update_thread.daemon = True
