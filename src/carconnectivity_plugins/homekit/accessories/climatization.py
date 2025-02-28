@@ -194,10 +194,25 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
 
     def __update_display_units_properties(self) -> None:
         if self.char_target_temperature is not None and self.char_temperature_display_units is not None:
+            min_step: float = 0.5
+            if self.target_temperature_attribute is not None and self.target_temperature_attribute.precision is not None:
+                min_step = self.target_temperature_attribute.precision
             if self.configured_temperature_unit == Temperature.C:
-                self.char_target_temperature.override_properties(properties={'maxValue': 29.5, 'minStep': 0.5, 'minValue': 16})
+                max_value: float = 29.5
+                if self.target_temperature_attribute is not None and self.target_temperature_attribute.maximum is not None:
+                    max_value = self.target_temperature_attribute.maximum
+                min_value: float = 16
+                if self.target_temperature_attribute is not None and self.target_temperature_attribute.minimum is not None:
+                    min_value = self.target_temperature_attribute.minimum
+                self.char_target_temperature.override_properties(properties={'maxValue': max_value, 'minStep': min_step, 'minValue': min_value})
             elif self.configured_temperature_unit == Temperature.F:
-                self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': 0.5, 'minValue': 61})
+                max_value: float = 85
+                if self.target_temperature_attribute is not None and self.target_temperature_attribute.maximum is not None:
+                    max_value = self.target_temperature_attribute.maximum
+                min_value: float = 61
+                if self.target_temperature_attribute is not None and self.target_temperature_attribute.minimum is not None:
+                    min_value = self.target_temperature_attribute.minimum
+                self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': min_step, 'minValue': 61})
 
     def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:  # pylint: disable=too-many-branches
         if flags & Observable.ObserverEvent.VALUE_CHANGED:
