@@ -34,7 +34,6 @@ class Plugin(BasePlugin):
     """
     def __init__(self, plugin_id: str, car_connectivity: CarConnectivity, config: Dict) -> None:  # pylint: disable=too-many-branches, too-many-statements
         BasePlugin.__init__(self, plugin_id=plugin_id, car_connectivity=car_connectivity, config=config, log=LOG)
-        self._healthy = False
 
         self._background_thread: Optional[threading.Thread] = None
         self.stop_event = threading.Event()
@@ -104,7 +103,7 @@ class Plugin(BasePlugin):
         update_thread = threading.Timer(interval=5.0, function=self.__delayed_update)
         update_thread.daemon = True
         update_thread.start()
-        self._healthy = True
+        self.healthy._set_value(value=True)  # pylint: disable=protected-access
         LOG.debug("Starting Homekit plugin done")
 
     def __delayed_update(self) -> None:
@@ -133,5 +132,5 @@ class Plugin(BasePlugin):
         """
         return "carconnectivity-plugin-homekit"
 
-    def is_healthy(self) -> bool:
-        return self._healthy and super().is_healthy()
+    def get_name(self) -> str:
+        return "HomeKit Plugin"
