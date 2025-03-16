@@ -19,6 +19,7 @@ from carconnectivity_plugins.homekit.accessories.charging_plug import ChargingPl
 from carconnectivity_plugins.homekit.accessories.outside_temperature import OutsideTemperatureAccessory
 from carconnectivity_plugins.homekit.accessories.flashing import FlashingLightAccessory
 from carconnectivity_plugins.homekit.accessories.locking_system import LockingAccessory
+from carconnectivity_plugins.homekit.accessories.window_heating import WindowHeatingAccessory
 from carconnectivity_plugins.homekit._version import __version__
 
 
@@ -311,6 +312,28 @@ class CarConnectivityBridge(Bridge):
                 # Replace the accessory if it is known but not of the correct type (was Dummy before)
                 else:
                     self.accessories[locking_accessory.aid] = locking_accessory
+                config_changed = True
+
+            # Window Heating
+            window_heating_aid: Optional[int] = self.get_existing_aid('Window Heating', vin)
+            # pylint: disable-next=too-many-boolean-expressions
+            if 'Charging' not in self.ignore_accessory_types \
+                    and vehicle.window_heatings is not None and vehicle.window_heatings.enabled \
+                    and (window_heating_aid is None
+                         or window_heating_aid not in self.accessories or not isinstance(self.accessories[window_heating_aid], WindowHeatingAccessory)):
+                window_heating_accessory = WindowHeatingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Window Heating', vin),
+                                                                  id_str='Window Heating', vin=vin, display_name=f'{name} Window Heating', vehicle=vehicle)
+                window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                          serial_number=f'{vin}-window-heating')
+                self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'category', window_heating_accessory.category)
+                self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'services',
+                                     [service.display_name for service in window_heating_accessory.services])
+                # Add the accessory to the bridge if not known
+                if window_heating_accessory.aid not in self.accessories:
+                    self.add_accessory(window_heating_accessory)
+                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                else:
+                    self.accessories[window_heating_accessory.aid] = window_heating_accessory
                 config_changed = True
 
         if config_changed:
