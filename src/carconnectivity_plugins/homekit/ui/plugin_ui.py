@@ -30,8 +30,8 @@ class PluginUI(BasePluginUI):
     A user interface class for the HomeKit plugin in the Car Connectivity application.
     """
     def __init__(self, plugin: BasePlugin):
-        blueprint: Optional[flask.Blueprint] = flask.Blueprint(name='homekit', import_name='carconnectivity-plugin-homekit', url_prefix='/homekit',
-                                                                    template_folder=os.path.dirname(__file__) + '/templates')
+        blueprint: Optional[flask.Blueprint] = flask.Blueprint(name=plugin.id, import_name='carconnectivity-plugin-homekit', url_prefix=f'/{plugin.id}',
+                                                               template_folder=os.path.dirname(__file__) + '/templates')
         super().__init__(plugin, blueprint=blueprint)
 
         class HomekitForm(FlaskForm):
