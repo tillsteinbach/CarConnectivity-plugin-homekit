@@ -37,7 +37,7 @@ classifiers = [
 [project.urls]
 
 [project.scripts]
-carconnectivity-mqtt = "carconnectivity_homekit.carconnectivity_homekit_base:main"
+carconnectivity-homekit = "carconnectivity_homekit.carconnectivity_homekit_base:main"
 
 [tool.setuptools_scm]
 write_to = "src/carconnectivity_plugins/homekit/_version.py"
