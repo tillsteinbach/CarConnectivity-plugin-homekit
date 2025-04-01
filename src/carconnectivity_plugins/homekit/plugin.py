@@ -56,8 +56,7 @@ class Plugin(BasePlugin):
             pincode_str: str = config['pincode']
             if not re.match(pattern=r'^\d{3}-\d{2}-\d{3}$', string=pincode_str):
                 raise ConfigurationError(f'Invalid pincode format: "{pincode_str}". Expected format is "xxx-xx-xxx" where x is a digit.')
-            else:
-                pincode: Optional[bytes] = pincode_str.encode('utf-8')
+            pincode: Optional[bytes] = pincode_str.encode('utf-8')
         else:
             pincode = None
 
