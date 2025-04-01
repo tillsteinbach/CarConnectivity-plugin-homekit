@@ -53,9 +53,11 @@ class Plugin(BasePlugin):
             self.active_config['port'] = 51234
 
         if 'pincode' in config and config['pincode'] is not None:
-            pincode: Optional[str] = config['pincode']
-            if pincode is not None and not re.match(pattern=r'^\d{3}-\d{2}-\d{3}$', string=pincode):
-                raise ConfigurationError(f'Invalid pincode format: "{pincode}". Expected format is "xxx-xx-xxx" where x is a digit.')
+            pincode_str: str = config['pincode']
+            if not re.match(pattern=r'^\d{3}-\d{2}-\d{3}$', string=pincode_str):
+                raise ConfigurationError(f'Invalid pincode format: "{pincode_str}". Expected format is "xxx-xx-xxx" where x is a digit.')
+            else:
+                pincode: Optional[bytes] = pincode_str.encode('utf-8')
         else:
             pincode = None
 
