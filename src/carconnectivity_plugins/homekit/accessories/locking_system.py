@@ -107,6 +107,10 @@ class LockingAccessory(GenericAccessory):
                     self.char_lock_current_state.set_value(3)
                     if self.char_lock_target_state is not None:
                         self.char_lock_target_state.set_value(1)
+                elif element.value == Doors.LockState.UNKNOWN:
+                    self.char_lock_current_state.set_value(3)
+                    if self.char_lock_target_state is not None:
+                        self.char_lock_target_state.set_value(1)
                 else:
                     self.char_lock_current_state.set_value(3)
                     if self.char_lock_target_state is not None:
