@@ -15,7 +15,7 @@ authors = [
 ]
 dependencies = [
     "carconnectivity>=0.7.1",
-    "HAP-python[QRCode]~=4.9.2"
+    "HAP-python[QRCode]>=4.9.2,<5.1.0"
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
