@@ -14,8 +14,8 @@ authors = [
     { name = "Till Steinbach" }
 ]
 dependencies = [
-    "carconnectivity>=0.7.1",
-    "HAP-python[QRCode]~=4.9.2"
+    "carconnectivity>=0.8.1",
+    "HAP-python[QRCode]~=5.0.0"
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
