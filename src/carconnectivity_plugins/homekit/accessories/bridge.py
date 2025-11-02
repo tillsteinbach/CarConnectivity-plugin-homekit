@@ -32,7 +32,7 @@ LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.bridge"
 
 
 class CarConnectivityBridge(Bridge):
-    """VWsfriend Bridge"""
+    """CarConnectivity Bridge"""
 
     # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, car_connectivity: CarConnectivity, driver: AccessoryDriver, display_name: str = 'CarConnectivity',
