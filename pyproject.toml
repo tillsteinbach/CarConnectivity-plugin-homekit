@@ -18,7 +18,9 @@ dependencies = [
     "HAP-python[QRCode]~=5.0.0"
 ]
 readme = "README.md"
-license = { file = "LICENSE" }
+license-files = [
+    "LICENSE",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
