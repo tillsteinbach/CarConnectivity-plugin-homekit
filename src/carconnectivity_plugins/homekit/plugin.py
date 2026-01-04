@@ -32,8 +32,9 @@ class Plugin(BasePlugin):
         car_connectivity (CarConnectivity): An instance of CarConnectivity.
         config (Dict): Configuration dictionary containing connection details.
     """
-    def __init__(self, plugin_id: str, car_connectivity: CarConnectivity, config: Dict) -> None:  # pylint: disable=too-many-branches, too-many-statements
-        BasePlugin.__init__(self, plugin_id=plugin_id, car_connectivity=car_connectivity, config=config, log=LOG)
+    # pylint: disable-next=too-many-branches, too-many-statements
+    def __init__(self, plugin_id: str, car_connectivity: CarConnectivity, config: Dict, initialization: Optional[Dict] = None) -> None:
+        BasePlugin.__init__(self, plugin_id=plugin_id, car_connectivity=car_connectivity, config=config, log=LOG, initialization=initialization)
 
         self._background_thread: Optional[threading.Thread] = None
         self.stop_event = threading.Event()
