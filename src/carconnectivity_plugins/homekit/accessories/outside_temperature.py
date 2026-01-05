@@ -2,6 +2,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import threading
+
 import logging
 
 from pyhap.characteristic import Characteristic
@@ -48,6 +50,8 @@ class OutsideTemperatureAccessory(GenericAccessory):
 
         self.outside_temperature_attribute: Optional[TemperatureAttribute] = None
 
+        self.cc_temperature_lock: threading.Lock = threading.Lock()
+
         self.add_name_characteristics()
 
         temperature_display_unit: Optional[int] = self.bridge.get_config_item(self.id_str, self.vin, 'TemperatureDisplayUnits')
@@ -69,15 +73,16 @@ class OutsideTemperatureAccessory(GenericAccessory):
     # pylint: disable=duplicate-code
 
     def __on_cc_outside_temperature_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):
-            target_temperature_unit: Temperature = Temperature.C
-            if self.char_temperature_display_units is not None:
-                target_temperature_unit = VALUE_TO_TEMPERATURE_UNIT[self.char_temperature_display_units.get_value()]
-            if self.char_current_temperature is not None and element.enabled and element.value is not None:
-                self.char_current_temperature.set_value(element.temperature_in(unit=target_temperature_unit))
-            LOG.info('targetTemperature Changed: %f', element.temperature_in(unit=target_temperature_unit))
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_temperature_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):
+                target_temperature_unit: Temperature = Temperature.C
+                if self.char_temperature_display_units is not None:
+                    target_temperature_unit = VALUE_TO_TEMPERATURE_UNIT[self.char_temperature_display_units.get_value()]
+                if self.char_current_temperature is not None and element.enabled and element.value is not None:
+                    self.char_current_temperature.set_value(element.temperature_in(unit=target_temperature_unit))
+                LOG.info('targetTemperature Changed: %f', element.temperature_in(unit=target_temperature_unit))
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     def __on_hk_temperature_display_units_change(self, value: int) -> None:
         if value in VALUE_TO_TEMPERATURE_UNIT:

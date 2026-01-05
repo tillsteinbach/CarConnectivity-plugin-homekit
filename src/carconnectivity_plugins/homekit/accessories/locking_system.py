@@ -2,6 +2,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import threading
+
 import logging
 
 from pyhap.characteristic import Characteristic
@@ -46,6 +48,8 @@ class LockingAccessory(GenericAccessory):
 
         self.char_lock_current_state: Optional[Characteristic] = None
         self.char_lock_target_state: Optional[Characteristic] = None
+
+        self.cc_lock_state_lock: threading.Lock = threading.Lock()
 
         self.add_name_characteristics()
         self.add_status_fault_characteristic()
@@ -93,26 +97,27 @@ class LockingAccessory(GenericAccessory):
                 self.set_status_fault(1, timeout=120)
 
     def __on_cc_lock_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_lock_current_state is not None:
-                if element.value == Doors.LockState.LOCKED:
-                    self.char_lock_current_state.set_value(1)
-                    if self.char_lock_target_state is not None:
-                        self.char_lock_target_state.set_value(1)
-                elif element.value == Doors.LockState.UNLOCKED:
-                    self.char_lock_current_state.set_value(0)
-                    if self.char_lock_target_state is not None:
-                        self.char_lock_target_state.set_value(0)
-                elif element.value == Doors.LockState.INVALID:
-                    self.char_lock_current_state.set_value(3)
-                    if self.char_lock_target_state is not None:
-                        self.char_lock_target_state.set_value(1)
-                elif element.value == Doors.LockState.UNKNOWN:
-                    self.char_lock_current_state.set_value(3)
-                    if self.char_lock_target_state is not None:
-                        self.char_lock_target_state.set_value(1)
-                else:
-                    self.char_lock_current_state.set_value(3)
-                    if self.char_lock_target_state is not None:
-                        self.char_lock_target_state.set_value(1)
-                    LOG.warning('unsupported lock state: %s', element.value)
+        with self.cc_lock_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_lock_current_state is not None:
+                    if element.value == Doors.LockState.LOCKED:
+                        self.char_lock_current_state.set_value(1)
+                        if self.char_lock_target_state is not None:
+                            self.char_lock_target_state.set_value(1)
+                    elif element.value == Doors.LockState.UNLOCKED:
+                        self.char_lock_current_state.set_value(0)
+                        if self.char_lock_target_state is not None:
+                            self.char_lock_target_state.set_value(0)
+                    elif element.value == Doors.LockState.INVALID:
+                        self.char_lock_current_state.set_value(3)
+                        if self.char_lock_target_state is not None:
+                            self.char_lock_target_state.set_value(1)
+                    elif element.value == Doors.LockState.UNKNOWN:
+                        self.char_lock_current_state.set_value(3)
+                        if self.char_lock_target_state is not None:
+                            self.char_lock_target_state.set_value(1)
+                    else:
+                        self.char_lock_current_state.set_value(3)
+                        if self.char_lock_target_state is not None:
+                            self.char_lock_target_state.set_value(1)
+                        LOG.warning('unsupported lock state: %s', element.value)

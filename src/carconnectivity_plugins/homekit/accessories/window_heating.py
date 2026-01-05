@@ -2,6 +2,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import threading
+
 import logging
 
 
@@ -50,6 +52,8 @@ class WindowHeatingAccessory(GenericAccessory):  # pylint: disable=too-many-inst
 
         self.window_heating_start_stop_command: Optional[GenericCommand] = None
 
+        self.cc_heating_state_lock: threading.Lock = threading.Lock()
+
         self.add_name_characteristics()
         self.add_status_fault_characteristic()
 
@@ -62,23 +66,24 @@ class WindowHeatingAccessory(GenericAccessory):  # pylint: disable=too-many-inst
                     self.window_heating_start_stop_command = self.vehicle.window_heatings.commands.commands['start-stop']
 
     def __on_cc_heating_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_on is not None:
-                if element.value is None:
-                    self.char_on.set_value(0)
-                elif element.value == WindowHeatings.HeatingState.OFF:
-                    self.char_on.set_value(0)
-                elif element.value == WindowHeatings.HeatingState.ON:
-                    self.char_on.set_value(1)
-                elif element.value in (WindowHeatings.HeatingState.INVALID,
-                                       WindowHeatings.HeatingState.UNSUPPORTED,
-                                       WindowHeatings.HeatingState.UNKNOWN):
-                    self.char_on.set_value(0)
-                else:
-                    self.char_on.set_value(0)
-                    LOG.warning('unsupported Window Heating state: %s', element.value.value)
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_heating_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_on is not None:
+                    if element.value is None:
+                        self.char_on.set_value(0)
+                    elif element.value == WindowHeatings.HeatingState.OFF:
+                        self.char_on.set_value(0)
+                    elif element.value == WindowHeatings.HeatingState.ON:
+                        self.char_on.set_value(1)
+                    elif element.value in (WindowHeatings.HeatingState.INVALID,
+                                           WindowHeatings.HeatingState.UNSUPPORTED,
+                                           WindowHeatings.HeatingState.UNKNOWN):
+                        self.char_on.set_value(0)
+                    else:
+                        self.char_on.set_value(0)
+                        LOG.warning('unsupported Window Heating state: %s', element.value.value)
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     def __on_hk_on_change(self, value: Any) -> None:
         try:

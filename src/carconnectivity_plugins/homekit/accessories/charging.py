@@ -60,6 +60,11 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
 
         self.charging_start_stop_command: Optional[GenericCommand] = None
 
+        self.cc_charging_state_lock: threading.Lock = threading.Lock()
+        self.cc_date_reached_lock: threading.Lock = threading.Lock()
+        self.cc_power_lock: threading.Lock = threading.Lock()
+        self.cc_connector_state_lock: threading.Lock = threading.Lock()
+
         self.add_name_characteristics()
         self.add_status_fault_characteristic()
         self.add_soc_characteristic()
@@ -93,25 +98,26 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
                                                     Observable.ObserverEvent.VALUE_CHANGED)
 
     def __on_cc_charging_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_on is not None:
-                if element.value is None:
-                    self.char_on.set_value(0)
-                elif element.value in (Charging.ChargingState.OFF,
-                                       Charging.ChargingState.READY_FOR_CHARGING):
-                    self.char_on.set_value(0)
-                elif element.value in (Charging.ChargingState.CHARGING,
-                                       Charging.ChargingState.DISCHARGING,
-                                       Charging.ChargingState.CONSERVATION):
-                    self.char_on.set_value(1)
-                elif element.value in (Charging.ChargingState.ERROR,
-                                       Charging.ChargingState.UNSUPPORTED):
-                    self.char_on.set_value(0)
-                else:
-                    self.char_on.set_value(0)
-                    LOG.warning('unsupported chargingState: %s', element.value.value)
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_charging_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_on is not None:
+                    if element.value is None:
+                        self.char_on.set_value(0)
+                    elif element.value in (Charging.ChargingState.OFF,
+                                           Charging.ChargingState.READY_FOR_CHARGING):
+                        self.char_on.set_value(0)
+                    elif element.value in (Charging.ChargingState.CHARGING,
+                                           Charging.ChargingState.DISCHARGING,
+                                           Charging.ChargingState.CONSERVATION):
+                        self.char_on.set_value(1)
+                    elif element.value in (Charging.ChargingState.ERROR,
+                                           Charging.ChargingState.UNSUPPORTED):
+                        self.char_on.set_value(0)
+                    else:
+                        self.char_on.set_value(0)
+                        LOG.warning('unsupported chargingState: %s', element.value.value)
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     def __on_hk_on_change(self, value: Any) -> None:
         try:
@@ -133,18 +139,19 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
             self.set_status_fault(1, timeout=120)
 
     def __on_cc_estimated_date_reached_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT:
-            if self.char_remaining_duration is not None:
-                if element.enabled and element.value is not None and isinstance(element.value, datetime):
-                    self.estimated_date_reached = element.value
-                    self.__update_remaining_duration()
-                    LOG.debug('Charging estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
-                else:
-                    self.estimated_date_reached = None
-                    self.char_remaining_duration.set_value(0)
-                    LOG.debug('Charging estimated date reached Changed: None')
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_date_reached_lock:
+            if flags & Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT:
+                if self.char_remaining_duration is not None:
+                    if element.enabled and element.value is not None and isinstance(element.value, datetime):
+                        self.estimated_date_reached = element.value
+                        self.__update_remaining_duration()
+                        LOG.debug('Charging estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
+                    else:
+                        self.estimated_date_reached = None
+                        self.char_remaining_duration.set_value(0)
+                        LOG.debug('Charging estimated date reached Changed: None')
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     # pylint: disable=duplicate-code
     def __update_remaining_duration(self) -> None:
@@ -163,29 +170,31 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
     # pylint: enable=duplicate-code
 
     def __on_cc_power_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_consumption is not None:
-                if isinstance(element, PowerAttribute) and element.value is not None:
-                    self.char_consumption.set_value(element.power_in(unit=Power.W))
-                    LOG.debug('Charging power Changed: %dW', element.power_in(unit=Power.W))
-                else:
-                    self.char_consumption.set_value(0)
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_power_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_consumption is not None:
+                    if isinstance(element, PowerAttribute) and element.value is not None:
+                        self.char_consumption.set_value(element.power_in(unit=Power.W))
+                        LOG.debug('Charging power Changed: %dW', element.power_in(unit=Power.W))
+                    else:
+                        self.char_consumption.set_value(0)
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     def __on_cc_connector_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_outlet_in_use is not None:
-                if element.value is None:
-                    self.char_outlet_in_use.set_value(False)
-                elif element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
-                    self.char_outlet_in_use.set_value(True)
-                elif element.value in (ChargingConnector.ChargingConnectorConnectionState.DISCONNECTED,
-                                       ChargingConnector.ChargingConnectorConnectionState.INVALID,
-                                       ChargingConnector.ChargingConnectorConnectionState.UNSUPPORTED):
-                    self.char_outlet_in_use.set_value(False)
-                else:
-                    self.char_outlet_in_use.set_value(False)
-                    LOG.warning('unsupported charging connector state: %s', element.value.value)
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_connector_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_outlet_in_use is not None:
+                    if element.value is None:
+                        self.char_outlet_in_use.set_value(False)
+                    elif element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
+                        self.char_outlet_in_use.set_value(True)
+                    elif element.value in (ChargingConnector.ChargingConnectorConnectionState.DISCONNECTED,
+                                           ChargingConnector.ChargingConnectorConnectionState.INVALID,
+                                           ChargingConnector.ChargingConnectorConnectionState.UNSUPPORTED):
+                        self.char_outlet_in_use.set_value(False)
+                    else:
+                        self.char_outlet_in_use.set_value(False)
+                        LOG.warning('unsupported charging connector state: %s', element.value.value)
+            else:
+                LOG.debug('Unsupported event %s', flags)

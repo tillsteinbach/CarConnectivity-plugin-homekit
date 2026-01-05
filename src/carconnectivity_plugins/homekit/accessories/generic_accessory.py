@@ -165,6 +165,9 @@ class BatteryGenericVehicleAccessory(GenericAccessory):
         self.char_status_low_battery: Optional[Characteristic] = None
         self.char_charging_state: Optional[Characteristic] = None
 
+        self.cc_level_lock: threading.Lock = threading.Lock()
+        self.cc_charging_state_lock: threading.Lock = threading.Lock()
+
     def add_soc_characteristic(self) -> None:
         """
         Adds the State of Charge (SoC) characteristic to the accessory if the vehicle is an electric vehicle.
@@ -179,7 +182,7 @@ class BatteryGenericVehicleAccessory(GenericAccessory):
             None
         """
         if self.battery_service is None and isinstance(self.vehicle, ElectricVehicle):
-            electric_drive: ElectricDrive = self.vehicle.get_electric_drive()
+            electric_drive: Optional[ElectricDrive] = self.vehicle.get_electric_drive()
             if electric_drive is not None and electric_drive.level is not None and electric_drive.level.enabled:
                 electric_drive.level.add_observer(self._on_level_change, Observable.ObserverEvent.VALUE_CHANGED)
                 self.battery_service: Optional[Service] = self.add_preload_service(service='BatteryService',  # pyright: ignore[reportArgumentType]
@@ -224,12 +227,14 @@ class BatteryGenericVehicleAccessory(GenericAccessory):
                 self.char_charging_state.set_value(2)
 
     def _on_level_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if element.value is not None and self.char_battery_level is not None:
-                self.char_battery_level.set_value(element.value)
-                self._set_low_battery_status(element.value)
+        with self.cc_level_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if element.value is not None and self.char_battery_level is not None:
+                    self.char_battery_level.set_value(element.value)
+                    self._set_low_battery_status(element.value)
 
     def _on_charging_state(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if element.value is not None and self.char_charging_state is not None:
-                self._set_charging_state(element.value)
+        with self.cc_charging_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if element.value is not None and self.char_charging_state is not None:
+                    self._set_charging_state(element.value)

@@ -2,6 +2,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import threading
+
 import logging
 
 from pyhap.characteristic import Characteristic
@@ -43,6 +45,7 @@ class ChargingPlugAccessory(GenericAccessory):
                                                                           'ContactSensorState', 'StatusFault'])
 
         self.char_contact_sensor_state: Optional[Characteristic] = None
+        self.cc_connection_state_lock: threading.Lock = threading.Lock()
 
         self.add_name_characteristics()
         self.add_status_fault_characteristic()
@@ -55,25 +58,26 @@ class ChargingPlugAccessory(GenericAccessory):
                 self.__on_cc_connection_state_change(self.vehicle.charging.connector.connection_state, Observable.ObserverEvent.VALUE_CHANGED)
 
     def __on_cc_connection_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_contact_sensor_state is not None:
-                if element.value is None:
-                    self.char_contact_sensor_state.set_value(0)
-                    if self.char_status_fault is not None:
-                        self.char_status_fault.set_value(0)
-                if isinstance(element.value, ChargingConnector.ChargingConnectorConnectionState):
-                    if element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
+        with self.cc_connection_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_contact_sensor_state is not None:
+                    if element.value is None:
                         self.char_contact_sensor_state.set_value(0)
                         if self.char_status_fault is not None:
                             self.char_status_fault.set_value(0)
-                    elif element.value in [ChargingConnector.ChargingConnectorConnectionState.DISCONNECTED,
-                                           ChargingConnector.ChargingConnectorConnectionState.UNSUPPORTED]:
-                        self.char_contact_sensor_state.set_value(1)
-                        if self.char_status_fault is not None:
-                            self.char_status_fault.set_value(0)
-                    else:
-                        self.char_contact_sensor_state.set_value(1)
-                        if self.char_status_fault is not None:
-                            self.char_status_fault.set_value(1)
-            else:
-                LOG.debug('Unsupported event %s', flags)
+                    if isinstance(element.value, ChargingConnector.ChargingConnectorConnectionState):
+                        if element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
+                            self.char_contact_sensor_state.set_value(0)
+                            if self.char_status_fault is not None:
+                                self.char_status_fault.set_value(0)
+                        elif element.value in [ChargingConnector.ChargingConnectorConnectionState.DISCONNECTED,
+                                               ChargingConnector.ChargingConnectorConnectionState.UNSUPPORTED]:
+                            self.char_contact_sensor_state.set_value(1)
+                            if self.char_status_fault is not None:
+                                self.char_status_fault.set_value(0)
+                        else:
+                            self.char_contact_sensor_state.set_value(1)
+                            if self.char_status_fault is not None:
+                                self.char_status_fault.set_value(1)
+                else:
+                    LOG.debug('Unsupported event %s', flags)

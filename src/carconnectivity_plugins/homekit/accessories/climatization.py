@@ -61,6 +61,11 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
         self.char_remaining_duration: Optional[Characteristic] = None
         self.estimated_date_reached: Optional[datetime] = None
 
+        self.cc_car_type_lock: threading.Lock = threading.Lock()
+        self.cc_climatization_state_lock: threading.Lock = threading.Lock()
+        self.cc_estimated_date_reached_lock: threading.Lock = threading.Lock()
+        self.cc_target_temperature_lock: threading.Lock = threading.Lock()
+
         self.target_temperature_attribute: Optional[TemperatureAttribute] = None
         self.climatization_start_stop_command: Optional[GenericCommand] = None
         temperature_display_unit: Optional[int] = self.bridge.get_config_item(self.id_str, self.vin, 'TemperatureDisplayUnits')
@@ -124,23 +129,25 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
     # pylint: disable=duplicate-code
 
     def __on_cc_car_type_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.UPDATED:
-            if isinstance(element, ElectricVehicle):
-                self.add_soc_characteristic()
-                self.vehicle.type.remove_observer(self.__on_cc_car_type_change)
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_car_type_lock:
+            if flags & Observable.ObserverEvent.UPDATED:
+                if isinstance(element, ElectricVehicle):
+                    self.add_soc_characteristic()
+                    self.vehicle.type.remove_observer(self.__on_cc_car_type_change)
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     def __on_cc_target_temperature_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):
-            target_temperature_unit: Temperature = Temperature.C
-            if self.char_temperature_display_units is not None:
-                target_temperature_unit = VALUE_TO_TEMPERATURE_UNIT[self.char_temperature_display_units.get_value()]
-            if self.char_target_temperature is not None and element.enabled and element.value is not None:
-                self.char_target_temperature.set_value(element.temperature_in(unit=target_temperature_unit))
-            LOG.info('targetTemperature Changed: %f', element.temperature_in(unit=target_temperature_unit))
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_target_temperature_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):
+                target_temperature_unit: Temperature = Temperature.C
+                if self.char_temperature_display_units is not None:
+                    target_temperature_unit = VALUE_TO_TEMPERATURE_UNIT[self.char_temperature_display_units.get_value()]
+                if self.char_target_temperature is not None and element.enabled and element.value is not None:
+                    self.char_target_temperature.set_value(element.temperature_in(unit=target_temperature_unit))
+                LOG.info('targetTemperature Changed: %f', element.temperature_in(unit=target_temperature_unit))
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     def __on_hk_target_temperature_change(self, value: int) -> None:
         if self.char_target_temperature is not None:
@@ -215,46 +222,48 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
                 self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': min_step, 'minValue': 61})
 
     def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:  # pylint: disable=too-many-branches
-        if flags & Observable.ObserverEvent.VALUE_CHANGED:
-            if self.char_current_heating_cooling_state is not None:
-                if element.value is None:
-                    self.char_current_heating_cooling_state.set_value(0)
-                    if self.char_target_heating_cooling_state is not None:
-                        self.char_target_heating_cooling_state.set_value(0)
-                elif element.value == Climatization.ClimatizationState.HEATING:
-                    self.char_current_heating_cooling_state.set_value(1)
-                    if self.char_target_heating_cooling_state is not None:
-                        self.char_target_heating_cooling_state.set_value(3)
-                elif element.value in (Climatization.ClimatizationState.COOLING, Climatization.ClimatizationState.VENTILATION):
-                    self.char_current_heating_cooling_state.set_value(2)
-                    if self.char_target_heating_cooling_state is not None:
-                        self.char_target_heating_cooling_state.set_value(3)
-                elif element.value == Climatization.ClimatizationState.OFF:
-                    self.char_current_heating_cooling_state.set_value(0)
-                    if self.char_target_heating_cooling_state is not None:
-                        self.char_target_heating_cooling_state.set_value(0)
+        with self.cc_climatization_state_lock:
+            if flags & Observable.ObserverEvent.VALUE_CHANGED:
+                if self.char_current_heating_cooling_state is not None:
+                    if element.value is None:
+                        self.char_current_heating_cooling_state.set_value(0)
+                        if self.char_target_heating_cooling_state is not None:
+                            self.char_target_heating_cooling_state.set_value(0)
+                    elif element.value == Climatization.ClimatizationState.HEATING:
+                        self.char_current_heating_cooling_state.set_value(1)
+                        if self.char_target_heating_cooling_state is not None:
+                            self.char_target_heating_cooling_state.set_value(3)
+                    elif element.value in (Climatization.ClimatizationState.COOLING, Climatization.ClimatizationState.VENTILATION):
+                        self.char_current_heating_cooling_state.set_value(2)
+                        if self.char_target_heating_cooling_state is not None:
+                            self.char_target_heating_cooling_state.set_value(3)
+                    elif element.value == Climatization.ClimatizationState.OFF:
+                        self.char_current_heating_cooling_state.set_value(0)
+                        if self.char_target_heating_cooling_state is not None:
+                            self.char_target_heating_cooling_state.set_value(0)
+                    else:
+                        self.char_current_heating_cooling_state.set_value(0)
+                        if self.char_target_heating_cooling_state is not None:
+                            self.char_target_heating_cooling_state.set_value(0)
+                        LOG.warning('unsupported climatisationState: %s', element.value.value)
+                    LOG.debug('Climatization State Changed: %s', element.value.value)
                 else:
-                    self.char_current_heating_cooling_state.set_value(0)
-                    if self.char_target_heating_cooling_state is not None:
-                        self.char_target_heating_cooling_state.set_value(0)
-                    LOG.warning('unsupported climatisationState: %s', element.value.value)
-                LOG.debug('Climatization State Changed: %s', element.value.value)
-            else:
-                LOG.debug('Unsupported event %s', flags)
+                    LOG.debug('Unsupported event %s', flags)
 
     def __on_cc_estimated_date_reached_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
-        if flags & Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT:
-            if self.char_remaining_duration is not None:
-                if element.enabled and element.value is not None and isinstance(element.value, datetime):
-                    self.estimated_date_reached = element.value
-                    self.__update_remaining_duration()
-                    LOG.debug('Climatization estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
-                else:
-                    self.estimated_date_reached = None
-                    self.char_remaining_duration.set_value(0)
-                    LOG.debug('Climatization estimated date reached Changed: None')
-        else:
-            LOG.debug('Unsupported event %s', flags)
+        with self.cc_estimated_date_reached_lock:
+            if flags & Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT:
+                if self.char_remaining_duration is not None:
+                    if element.enabled and element.value is not None and isinstance(element.value, datetime):
+                        self.estimated_date_reached = element.value
+                        self.__update_remaining_duration()
+                        LOG.debug('Climatization estimated date reached Changed: %s', self.estimated_date_reached.isoformat())
+                    else:
+                        self.estimated_date_reached = None
+                        self.char_remaining_duration.set_value(0)
+                        LOG.debug('Climatization estimated date reached Changed: None')
+            else:
+                LOG.debug('Unsupported event %s', flags)
 
     # pylint: disable=duplicate-code
     def __update_remaining_duration(self) -> None:
