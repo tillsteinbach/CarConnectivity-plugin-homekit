@@ -21,7 +21,6 @@ from carconnectivity_plugins.homekit.accessories.bridge import CarConnectivityBr
 if TYPE_CHECKING:
     from typing import Dict, Optional
     from carconnectivity.carconnectivity import CarConnectivity
-    from carconnectivity.vehicle import GenericVehicle
 
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit")
 
