@@ -9,10 +9,24 @@ Initialized HomeKit Accessories:
   <p>
     <ul>
     {% for accessory in homekit_plugin._driver.accessory.accessories.values() %}
-      <li><strong>{{ accessory.display_name }}</strong> (AID: {{ accessory.aid }})<br/> Services:
-        <ul>{% for service in accessory.services %}
-          <li>{{service.display_name}}</li>
-            {% endfor %}
+      <li><strong>{{ accessory.display_name }}</strong> (AID: {{ accessory.aid }}) Available: {{ accessory.available }}<br/> Services:
+        <ul>
+          {% for service in accessory.services %}
+            <li>{{service.display_name}} {% if service.is_primary_service %}(Primary){% endif %}<br/> Characteristics:
+              <ul>
+                {% for char in service.characteristics %}
+                  <li>{{char.display_name}} (Current Value: {{char._value}}, Properties: {{char._properties}})</li>
+                {% endfor %}
+              </ul>
+              <br/>Linked Services:
+              <ul>
+                {% for service in service.linked_services %}
+                  <li>{{service.display_name}}</li>
+                {% endfor %}
+              </ul>
+            </li>  
+          {% endfor %}
+          
         </ul>
       </li>
     {% endfor %}
