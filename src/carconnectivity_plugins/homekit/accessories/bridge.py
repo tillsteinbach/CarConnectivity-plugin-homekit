@@ -185,215 +185,231 @@ class CarConnectivityBridge(Bridge):
             # Climatization
             climatization_aid: Optional[int] = self.get_existing_aid('Climatization', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'Climatization' not in self.ignore_accessory_types \
-                    and vehicle.climatization is not None and vehicle.climatization.enabled \
-                    and (climatization_aid is None
-                         or climatization_aid not in self.accessories
-                         or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory)):
-                climatization_accessory: ClimatizationAccessory = ClimatizationAccessory(driver=self.driver, bridge=self,
-                                                                                         aid=self.select_aid('Climatization', vin),
-                                                                                         id_str='Climatization',
-                                                                                         vin=vin,
-                                                                                         display_name=f'{name} Climatization',
-                                                                                         vehicle=vehicle)
-                climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                         serial_number=f'{vin}-climatization')
-                self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
-                self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'services',
-                                     [service.display_name for service in climatization_accessory.services])
-                # Add the accessory to the bridge if not known
-                if climatization_accessory.aid not in self.accessories:
-                    self.add_accessory(climatization_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'Climatization' not in self.ignore_accessory_types:
+                if vehicle.climatization is not None and vehicle.climatization.enabled:
+                    if climatization_aid is None or climatization_aid not in self.accessories \
+                            or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory):
+                        climatization_accessory: ClimatizationAccessory = ClimatizationAccessory(driver=self.driver, bridge=self,
+                                                                                                 aid=self.select_aid('Climatization', vin),
+                                                                                                 id_str='Climatization',
+                                                                                                 vin=vin,
+                                                                                                 display_name=f'{name} Climatization',
+                                                                                                 vehicle=vehicle)
+                        climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                 serial_number=f'{vin}-climatization')
+                        self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
+                        self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'services',
+                                             [service.display_name for service in climatization_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if climatization_accessory.aid not in self.accessories:
+                            self.add_accessory(climatization_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[climatization_accessory.aid] = climatization_accessory
+                        config_changed = True
+                    elif climatization_aid in self.accessories:
+                        climatization_accessory: ClimatizationAccessory = self.accessories[climatization_aid]
+                        climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                 serial_number=f'{vin}-climatization')
+                        config_changed = True
                 else:
-                    self.accessories[climatization_accessory.aid] = climatization_accessory
-                config_changed = True
-            else:
-                climatization_accessory: ClimatizationAccessory = self.accessories[climatization_aid]
-                climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                         serial_number=f'{vin}-climatization')
-                config_changed = True
+                    vehicle.climatization.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # Charging
             charging_aid: Optional[int] = self.get_existing_aid('Charging', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'Charging' not in self.ignore_accessory_types \
-                    and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
-                    and (charging_aid is None
-                         or charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory)):
-                charging_accessory: ChargingAccessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
-                                                                          id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)
-                charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                    serial_number=f'{vin}-charging')
-                self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'category', charging_accessory.category)
-                self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'services',
-                                     [service.display_name for service in charging_accessory.services])
-                # Add the accessory to the bridge if not known
-                if charging_accessory.aid not in self.accessories:
-                    self.add_accessory(charging_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'Charging' not in self.ignore_accessory_types:
+                if isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled:
+                    if charging_aid is None or charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory):
+                        charging_accessory: ChargingAccessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
+                                                                                  id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)
+                        charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                            serial_number=f'{vin}-charging')
+                        self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'category', charging_accessory.category)
+                        self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'services',
+                                             [service.display_name for service in charging_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if charging_accessory.aid not in self.accessories:
+                            self.add_accessory(charging_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[charging_accessory.aid] = charging_accessory
+                        config_changed = True
+                    elif charging_aid in self.accessories:
+                        charging_accessory: ChargingAccessory = self.accessories[charging_aid]
+                        charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                            serial_number=f'{vin}-charging')
+                        config_changed = True
                 else:
-                    self.accessories[charging_accessory.aid] = charging_accessory
-                config_changed = True
-            else:
-                charging_accessory: ChargingAccessory = self.accessories[charging_aid]
-                charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                    serial_number=f'{vin}-charging')
-                config_changed = True
+                    if isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None:
+                        vehicle.charging.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # ChargingPlug
             plug_aid: Optional[int] = self.get_existing_aid('ChargingPlug', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'ChargingPlug' not in self.ignore_accessory_types \
-                    and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
-                    and (plug_aid is None or plug_aid not in self.accessories or not isinstance(self.accessories[plug_aid], ChargingPlugAccessory)):
-                charging_plug_accessory: ChargingPlugAccessory = ChargingPlugAccessory(driver=self.driver, bridge=self,
-                                                                                       aid=self.select_aid('ChargingPlug', vin),
-                                                                                       id_str='ChargingPlug',
-                                                                                       vin=vin,
-                                                                                       display_name=f'{name} Charging Plug',
-                                                                                       vehicle=vehicle)
-                charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                         serial_number=f'{vin}-charging-plug')
-                self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'category', charging_plug_accessory.category)
-                self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'services',
-                                     [service.display_name for service in charging_plug_accessory.services])
-                # Add the accessory to the bridge if not known
-                if charging_plug_accessory.aid not in self.accessories:
-                    self.add_accessory(charging_plug_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'ChargingPlug' not in self.ignore_accessory_types:
+                if isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled:
+                    if plug_aid is None or plug_aid not in self.accessories or not isinstance(self.accessories[plug_aid], ChargingPlugAccessory):
+                        charging_plug_accessory: ChargingPlugAccessory = ChargingPlugAccessory(driver=self.driver, bridge=self,
+                                                                                               aid=self.select_aid('ChargingPlug', vin),
+                                                                                               id_str='ChargingPlug',
+                                                                                               vin=vin,
+                                                                                               display_name=f'{name} Charging Plug',
+                                                                                               vehicle=vehicle)
+                        charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                 serial_number=f'{vin}-charging-plug')
+                        self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'category', charging_plug_accessory.category)
+                        self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'services',
+                                             [service.display_name for service in charging_plug_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if charging_plug_accessory.aid not in self.accessories:
+                            self.add_accessory(charging_plug_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[charging_plug_accessory.aid] = charging_plug_accessory
+                        config_changed = True
+                    elif plug_aid in self.accessories:
+                        charging_plug_accessory: ChargingPlugAccessory = self.accessories[plug_aid]
+                        charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                 serial_number=f'{vin}-charging-plug')
+                        config_changed = True
                 else:
-                    self.accessories[charging_plug_accessory.aid] = charging_plug_accessory
-                config_changed = True
-            else:
-                charging_plug_accessory: ChargingPlugAccessory = self.accessories[plug_aid]
-                charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                         serial_number=f'{vin}-charging-plug')
-                config_changed = True
+                    if isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None:
+                        vehicle.charging.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # OutsideTemperature
             outside_temperature_aid: Optional[int] = self.get_existing_aid('OutsideTemperature', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'OutsideTemperature' not in self.ignore_accessory_types \
-                    and vehicle.outside_temperature is not None and vehicle.outside_temperature.enabled \
-                    and (outside_temperature_aid is None
-                         or outside_temperature_aid not in self.accessories or not isinstance(self.accessories[outside_temperature_aid],
-                                                                                              OutsideTemperatureAccessory)):
-                outside_temperature_accessory: OutsideTemperatureAccessory = OutsideTemperatureAccessory(driver=self.driver, bridge=self,
-                                                                                                         aid=self.select_aid('OutsideTemperature', vin),
-                                                                                                         id_str='OutsideTemperature',
-                                                                                                         vin=vin,
-                                                                                                         display_name=f'{name} Outside Temperature',
-                                                                                                         vehicle=vehicle)
-                outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                               serial_number=f'{vin}-outside-temperature')
-                self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'category',
-                                     outside_temperature_accessory.category)
-                self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'services',
-                                     [service.display_name for service in outside_temperature_accessory.services])
-                # Add the accessory to the bridge if not known
-                if outside_temperature_accessory.aid not in self.accessories:
-                    self.add_accessory(outside_temperature_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'OutsideTemperature' not in self.ignore_accessory_types:
+                if vehicle.outside_temperature is not None and vehicle.outside_temperature.enabled:
+                    if outside_temperature_aid is None or outside_temperature_aid not in self.accessories \
+                            or not isinstance(self.accessories[outside_temperature_aid], OutsideTemperatureAccessory):
+                        outside_temperature_accessory: OutsideTemperatureAccessory = OutsideTemperatureAccessory(driver=self.driver, bridge=self,
+                                                                                                                 aid=self.select_aid('OutsideTemperature', vin),
+                                                                                                                 id_str='OutsideTemperature',
+                                                                                                                 vin=vin,
+                                                                                                                 display_name=f'{name} Outside Temperature',
+                                                                                                                 vehicle=vehicle)
+                        outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                       serial_number=f'{vin}-outside-temperature')
+                        self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'category',
+                                             outside_temperature_accessory.category)
+                        self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'services',
+                                             [service.display_name for service in outside_temperature_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if outside_temperature_accessory.aid not in self.accessories:
+                            self.add_accessory(outside_temperature_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[outside_temperature_accessory.aid] = outside_temperature_accessory
+                        config_changed = True
+                    elif outside_temperature_aid in self.accessories:
+                        outside_temperature_accessory: OutsideTemperatureAccessory = self.accessories[outside_temperature_aid]
+                        outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                       serial_number=f'{vin}-outside-temperature')
+                        config_changed = True
                 else:
-                    self.accessories[outside_temperature_accessory.aid] = outside_temperature_accessory
-                config_changed = True
-            else:
-                outside_temperature_accessory: OutsideTemperatureAccessory = self.accessories[outside_temperature_aid]
-                outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                               serial_number=f'{vin}-outside-temperature')
-                config_changed = True
+                    vehicle.outside_temperature.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # FlashingAccessory
             flashing_light_aid: Optional[int] = self.get_existing_aid('FlashingLight', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'FlashingLight' not in self.ignore_accessory_types \
-                    and vehicle.commands is not None and vehicle.commands is not None and 'honk-flash' in vehicle.commands.commands \
-                    and (flashing_light_aid is None or flashing_light_aid not in self.accessories or not isinstance(self.accessories[flashing_light_aid],
-                                                                                                                    FlashingLightAccessory)):
-                flashing_light_accessory: FlashingLightAccessory = FlashingLightAccessory(driver=self.driver, bridge=self,
-                                                                                          aid=self.select_aid('FlashingLight', vin),
-                                                                                          id_str='FlashingLight',
-                                                                                          vin=vin,
-                                                                                          display_name=f'{name} Flashing',
-                                                                                          vehicle=vehicle)
-                flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                          serial_number=f'{vin}-flashing-light')
-                self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'category',
-                                     flashing_light_accessory.category)
-                self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'services',
-                                     [service.display_name for service in flashing_light_accessory.services])
-                # Add the accessory to the bridge if not known
-                if flashing_light_accessory.aid not in self.accessories:
-                    self.add_accessory(flashing_light_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'FlashingLight' not in self.ignore_accessory_types:
+                if vehicle.commands is not None and vehicle.commands is not None and 'honk-flash' in vehicle.commands.commands:
+                    if flashing_light_aid is None or flashing_light_aid not in self.accessories \
+                            or not isinstance(self.accessories[flashing_light_aid], FlashingLightAccessory):
+                        flashing_light_accessory: FlashingLightAccessory = FlashingLightAccessory(driver=self.driver, bridge=self,
+                                                                                                  aid=self.select_aid('FlashingLight', vin),
+                                                                                                  id_str='FlashingLight',
+                                                                                                  vin=vin,
+                                                                                                  display_name=f'{name} Flashing',
+                                                                                                  vehicle=vehicle)
+                        flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                  serial_number=f'{vin}-flashing-light')
+                        self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'category',
+                                             flashing_light_accessory.category)
+                        self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'services',
+                                             [service.display_name for service in flashing_light_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if flashing_light_accessory.aid not in self.accessories:
+                            self.add_accessory(flashing_light_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[flashing_light_accessory.aid] = flashing_light_accessory
+                        config_changed = True
+                    elif flashing_light_aid in self.accessories:
+                        flashing_light_accessory: FlashingLightAccessory = self.accessories[flashing_light_aid]
+                        flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                  serial_number=f'{vin}-flashing-light')
+                        config_changed = True
                 else:
-                    self.accessories[flashing_light_accessory.aid] = flashing_light_accessory
-                config_changed = True
-            else:
-                flashing_light_accessory: FlashingLightAccessory = self.accessories[flashing_light_aid]
-                flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                          serial_number=f'{vin}-flashing-light')
-                config_changed = True
+                    if vehicle.commands is not None:
+                        vehicle.commands.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # LockingAccessory
             locking_aid: Optional[int] = self.get_existing_aid('Locking', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'Locking' not in self.ignore_accessory_types \
-                    and vehicle.doors is not None and vehicle.doors.commands is not None \
-                    and 'lock-unlock' in vehicle.doors.commands.commands \
-                    and (locking_aid is None or locking_aid not in self.accessories or not isinstance(self.accessories[locking_aid],
-                                                                                                      LockingAccessory)):
-                locking_accessory: LockingAccessory = LockingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Locking', vin),
-                                                                       id_str='Locking', vin=vin, display_name=f'{name} Locking', vehicle=vehicle)
-                locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                   serial_number=f'{vin}-locking')
-                self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'category', locking_accessory.category)
-                self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'services',
-                                     [service.display_name for service in locking_accessory.services])
-                # Add the accessory to the bridge if not known
-                if locking_accessory.aid not in self.accessories:
-                    self.add_accessory(locking_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'Locking' not in self.ignore_accessory_types:
+                if vehicle.doors is not None and vehicle.doors.commands is not None \
+                        and 'lock-unlock' in vehicle.doors.commands.commands:
+                    if locking_aid is None or locking_aid not in self.accessories or not isinstance(self.accessories[locking_aid],
+                                                                                                    LockingAccessory):
+                        locking_accessory: LockingAccessory = LockingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Locking', vin),
+                                                                               id_str='Locking', vin=vin, display_name=f'{name} Locking', vehicle=vehicle)
+                        locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                           serial_number=f'{vin}-locking')
+                        self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'category', locking_accessory.category)
+                        self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'services',
+                                             [service.display_name for service in locking_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if locking_accessory.aid not in self.accessories:
+                            self.add_accessory(locking_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[locking_accessory.aid] = locking_accessory
+                        config_changed = True
+                    elif locking_aid in self.accessories:
+                        locking_accessory: LockingAccessory = self.accessories[locking_aid]
+                        locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                           serial_number=f'{vin}-locking')
+                        config_changed = True
                 else:
-                    self.accessories[locking_accessory.aid] = locking_accessory
-                config_changed = True
-            else:
-                locking_accessory: LockingAccessory = self.accessories[locking_aid]
-                locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                   serial_number=f'{vin}-locking')
-                config_changed = True
+                    if vehicle.doors is not None and vehicle.doors.commands is not None:
+                        vehicle.doors.commands.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # Window Heating
             window_heating_aid: Optional[int] = self.get_existing_aid('Window Heating', vin)
             # pylint: disable-next=too-many-boolean-expressions
-            if 'Charging' not in self.ignore_accessory_types \
-                    and vehicle.window_heatings is not None and vehicle.window_heatings.enabled \
-                    and (window_heating_aid is None
-                         or window_heating_aid not in self.accessories or not isinstance(self.accessories[window_heating_aid], WindowHeatingAccessory)):
-                window_heating_accessory: WindowHeatingAccessory = WindowHeatingAccessory(driver=self.driver, bridge=self,
-                                                                                          aid=self.select_aid('Window Heating', vin),
-                                                                                          id_str='Window Heating',
-                                                                                          vin=vin,
-                                                                                          display_name=f'{name} Window Heating',
-                                                                                          vehicle=vehicle)
-                window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                          serial_number=f'{vin}-window-heating')
-                self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'category', window_heating_accessory.category)
-                self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'services',
-                                     [service.display_name for service in window_heating_accessory.services])
-                # Add the accessory to the bridge if not known
-                if window_heating_accessory.aid not in self.accessories:
-                    self.add_accessory(window_heating_accessory)
-                # Replace the accessory if it is known but not of the correct type (was Dummy before)
+            if 'Charging' not in self.ignore_accessory_types:
+                if vehicle.window_heatings is not None and vehicle.window_heatings.enabled:
+                    if window_heating_aid is None or window_heating_aid not in self.accessories \
+                            or not isinstance(self.accessories[window_heating_aid], WindowHeatingAccessory):
+                        window_heating_accessory: WindowHeatingAccessory = WindowHeatingAccessory(driver=self.driver, bridge=self,
+                                                                                                  aid=self.select_aid('Window Heating', vin),
+                                                                                                  id_str='Window Heating',
+                                                                                                  vin=vin,
+                                                                                                  display_name=f'{name} Window Heating',
+                                                                                                  vehicle=vehicle)
+                        window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                  serial_number=f'{vin}-window-heating')
+                        self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'category', window_heating_accessory.category)
+                        self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'services',
+                                             [service.display_name for service in window_heating_accessory.services])
+                        # Add the accessory to the bridge if not known
+                        if window_heating_accessory.aid not in self.accessories:
+                            self.add_accessory(window_heating_accessory)
+                        # Replace the accessory if it is known but not of the correct type (was Dummy before)
+                        else:
+                            self.accessories[window_heating_accessory.aid] = window_heating_accessory
+                        config_changed = True
+                    elif window_heating_aid in self.accessories:
+                        window_heating_accessory: WindowHeatingAccessory = self.accessories[window_heating_aid]
+                        window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                                  serial_number=f'{vin}-window-heating')
+                        config_changed = True
                 else:
-                    self.accessories[window_heating_accessory.aid] = window_heating_accessory
-                config_changed = True
-            else:
-                window_heating_accessory: WindowHeatingAccessory = self.accessories[window_heating_aid]
-                window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
-                                                          serial_number=f'{vin}-window-heating')
-                config_changed = True
+                    if vehicle.window_heatings is not None:
+                        vehicle.window_heatings.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
         if config_changed:
             self.driver.config_changed()
