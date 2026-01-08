@@ -65,11 +65,12 @@ class OutsideTemperatureAccessory(GenericAccessory):
                                                                               valid_values={"Celsius": 0, "Fahrenheit": 1},
                                                                               setter_callback=self.__on_hk_temperature_display_units_change)
 
-        if self.vehicle is not None and vehicle.outside_temperature is not None and vehicle.outside_temperature.enabled:
+        if self.vehicle is not None and vehicle.outside_temperature is not None:
             self.outside_temperature_attribute = self.vehicle.outside_temperature
             self.vehicle.outside_temperature.add_observer(self.__on_cc_outside_temperature_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
             self.char_current_temperature = self.service.configure_char('CurrentTemperature')
-            self.__on_cc_outside_temperature_change(self.vehicle.outside_temperature, Observable.ObserverEvent.VALUE_CHANGED)
+            if vehicle.outside_temperature.enabled:
+                self.__on_cc_outside_temperature_change(self.vehicle.outside_temperature, Observable.ObserverEvent.VALUE_CHANGED)
     # pylint: disable=duplicate-code
 
     def __on_cc_outside_temperature_change(self, element: Any, flags: Observable.ObserverEvent) -> None:

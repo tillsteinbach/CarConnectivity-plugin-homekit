@@ -98,10 +98,12 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
 
         if self.vehicle is not None and self.vehicle.climatization is not None:
             if self.vehicle.climatization.state is not None:
+                self.vehicle.climatization.state.add_observer(self.__on_cc_climatization_state_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
+                self.char_current_heating_cooling_state = self.service.configure_char('CurrentHeatingCoolingState')
                 if self.vehicle.climatization.state.enabled:
-                    self.vehicle.climatization.state.add_observer(self.__on_cc_climatization_state_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
-                    self.char_current_heating_cooling_state = self.service.configure_char('CurrentHeatingCoolingState')
                     self.__on_cc_climatization_state_change(self.vehicle.climatization.state, Observable.ObserverEvent.VALUE_CHANGED)
+                else:
+                    self.__on_cc_climatization_state_change(Climatization.ClimatizationState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
 
             if self.vehicle.climatization.commands is not None and self.vehicle.climatization.commands.contains_command('start-stop'):
                 self.climatization_start_stop_command = self.vehicle.climatization.commands.commands['start-stop']
@@ -112,12 +114,13 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
                 # call on change again to also set the target state
                 self.__on_cc_climatization_state_change(self.vehicle.climatization.state, Observable.ObserverEvent.VALUE_CHANGED)
 
-            if self.vehicle.climatization.estimated_date_reached is not None and self.vehicle.climatization.estimated_date_reached.enabled:
+            if self.vehicle.climatization.estimated_date_reached is not None:
                 self.vehicle.climatization.estimated_date_reached.add_observer(self.__on_cc_estimated_date_reached_change,
                                                                                flag=Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT)
                 self.char_remaining_duration = self.service.configure_char('RemainingDuration')
-                self.__on_cc_estimated_date_reached_change(self.vehicle.climatization.estimated_date_reached,
-                                                           Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT)
+                if self.vehicle.climatization.estimated_date_reached.enabled:
+                    self.__on_cc_estimated_date_reached_change(self.vehicle.climatization.estimated_date_reached,
+                                                               Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT)
 
         self.add_name_characteristics()
         self.add_status_fault_characteristic()

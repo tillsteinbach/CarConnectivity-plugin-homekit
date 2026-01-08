@@ -52,10 +52,13 @@ class ChargingPlugAccessory(GenericAccessory):
 
         if self.vehicle is not None and isinstance(self.vehicle, ElectricVehicle) and self.vehicle.charging is not None \
                 and self.vehicle.charging.connector is not None:
-            if self.vehicle.charging.connector.connection_state is not None and self.vehicle.charging.connector.connection_state.enabled:
+            if self.vehicle.charging.connector.connection_state is not None:
                 self.vehicle.charging.connector.connection_state.add_observer(self.__on_cc_connection_state_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
                 self.char_contact_sensor_state = self.service.configure_char('ContactSensorState')
-                self.__on_cc_connection_state_change(self.vehicle.charging.connector.connection_state, Observable.ObserverEvent.VALUE_CHANGED)
+                if self.vehicle.charging.connector.connection_state.enabled:
+                    self.__on_cc_connection_state_change(self.vehicle.charging.connector.connection_state, Observable.ObserverEvent.VALUE_CHANGED)
+                else:
+                    self.__on_cc_connection_state_change(ChargingConnector.ChargingConnectorConnectionState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
 
     def __on_cc_connection_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_connection_state_lock:

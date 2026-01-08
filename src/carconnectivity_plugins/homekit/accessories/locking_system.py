@@ -60,10 +60,13 @@ class LockingAccessory(GenericAccessory):
                 self.lock_unlock_command: GenericCommand = self.vehicle.doors.commands.commands['lock-unlock']
                 self.char_lock_target_state = self.service.configure_char('LockTargetState', setter_callback=self.__on_hk_lock_target_state_change)
                 self.char_lock_target_state.allow_invalid_client_values = True
-            if self.vehicle.doors.lock_state is not None and self.vehicle.doors.lock_state.enabled:
+            if self.vehicle.doors.lock_state is not None:
                 self.vehicle.doors.lock_state.add_observer(self.__on_cc_lock_state_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
                 self.char_lock_current_state = self.service.configure_char('LockCurrentState')
-                self.__on_cc_lock_state_change(self.vehicle.doors.lock_state, flags=Observable.ObserverEvent.VALUE_CHANGED)
+                if self.vehicle.doors.lock_state.enabled:
+                    self.__on_cc_lock_state_change(self.vehicle.doors.lock_state, flags=Observable.ObserverEvent.VALUE_CHANGED)
+                else:
+                    self.__on_cc_lock_state_change(Doors.LockState.UNKNOWN, flags=Observable.ObserverEvent.VALUE_CHANGED)
 
     def __on_hk_lock_target_state_change(self, value: Any) -> None:
         if self.char_lock_target_state is not None:

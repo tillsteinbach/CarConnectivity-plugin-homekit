@@ -58,10 +58,13 @@ class WindowHeatingAccessory(GenericAccessory):  # pylint: disable=too-many-inst
         self.add_status_fault_characteristic()
 
         if self.vehicle is not None and self.vehicle.window_heatings is not None:
-            if self.vehicle.window_heatings.heating_state is not None and self.vehicle.window_heatings.heating_state.enabled:
+            if self.vehicle.window_heatings.heating_state is not None:
                 self.vehicle.window_heatings.heating_state.add_observer(self.__on_cc_heating_state_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
                 self.char_on = self.service.configure_char('On', setter_callback=self.__on_hk_on_change)
-                self.__on_cc_heating_state_change(self.vehicle.window_heatings.heating_state, Observable.ObserverEvent.VALUE_CHANGED)
+                if self.vehicle.window_heatings.heating_state.enabled:
+                    self.__on_cc_heating_state_change(self.vehicle.window_heatings.heating_state, Observable.ObserverEvent.VALUE_CHANGED)
+                else:
+                    self.__on_cc_heating_state_change(WindowHeatings.HeatingState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
                 if self.vehicle.window_heatings.commands is not None and self.vehicle.window_heatings.commands.contains_command('start-stop'):
                     self.window_heating_start_stop_command = self.vehicle.window_heatings.commands.commands['start-stop']
 

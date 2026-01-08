@@ -70,32 +70,41 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
         self.add_soc_characteristic()
 
         if self.vehicle is not None and isinstance(self.vehicle, ElectricVehicle) and self.vehicle.charging is not None:
-            if self.vehicle.charging.state is not None and self.vehicle.charging.state.enabled:
+            if self.vehicle.charging.state is not None:
                 self.vehicle.charging.state.add_observer(self.__on_cc_charging_state_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
                 self.char_on = self.service.configure_char('On', setter_callback=self.__on_hk_on_change)
-                self.__on_cc_charging_state_change(self.vehicle.charging.state, Observable.ObserverEvent.VALUE_CHANGED)
+                if self.vehicle.charging.state.enabled:
+                    self.__on_cc_charging_state_change(self.vehicle.charging.state, Observable.ObserverEvent.VALUE_CHANGED)
+                else:
+                    self.__on_cc_charging_state_change(Charging.ChargingState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
+
                 if self.vehicle.charging.commands is not None and self.vehicle.charging.commands.contains_command('start-stop'):
                     self.charging_start_stop_command = self.vehicle.charging.commands.commands['start-stop']
 
-            if self.vehicle.charging.estimated_date_reached is not None and self.vehicle.charging.estimated_date_reached.enabled:
+            if self.vehicle.charging.estimated_date_reached is not None:
                 self.vehicle.charging.estimated_date_reached.add_observer(self.__on_cc_estimated_date_reached_change,
                                                                           flag=Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT)
                 self.char_remaining_duration = self.service.configure_char('RemainingDuration')
-                self.__on_cc_estimated_date_reached_change(self.vehicle.charging.estimated_date_reached,
-                                                           Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT)
+                if self.vehicle.charging.estimated_date_reached.enabled:
+                    self.__on_cc_estimated_date_reached_change(self.vehicle.charging.estimated_date_reached,
+                                                               Observable.ObserverEvent.UPDATED_NEW_MEASUREMENT)
 
-            if self.vehicle.charging.power is not None and self.vehicle.charging.power.enabled:
+            if self.vehicle.charging.power is not None:
                 self.vehicle.charging.power.add_observer(self.__on_cc_power_change, flag=Observable.ObserverEvent.VALUE_CHANGED)
                 self.char_consumption = self.service.configure_char('Consumption')
-                self.__on_cc_power_change(self.vehicle.charging.power, Observable.ObserverEvent.VALUE_CHANGED)
+                if self.vehicle.charging.power.enabled:
+                    self.__on_cc_power_change(self.vehicle.charging.power, Observable.ObserverEvent.VALUE_CHANGED)
 
-            if self.vehicle.charging.connector is not None and self.vehicle.charging.connector.connection_state is not None \
-                    and self.vehicle.charging.connector.connection_state.enabled:
+            if self.vehicle.charging.connector is not None and self.vehicle.charging.connector.connection_state is not None:
                 self.vehicle.charging.connector.connection_state.add_observer(self.__on_cc_connector_state_change,
                                                                               flag=Observable.ObserverEvent.VALUE_CHANGED)
                 self.char_outlet_in_use = self.service.configure_char('OutletInUse')
-                self.__on_cc_connector_state_change(self.vehicle.charging.connector.connection_state,
-                                                    Observable.ObserverEvent.VALUE_CHANGED)
+                if self.vehicle.charging.connector.connection_state.enabled:
+                    self.__on_cc_connector_state_change(self.vehicle.charging.connector.connection_state,
+                                                        Observable.ObserverEvent.VALUE_CHANGED)
+                else:
+                    self.__on_cc_connector_state_change(ChargingConnector.ChargingConnectorConnectionState.UNKNOWN,
+                                                        Observable.ObserverEvent.VALUE_CHANGED)
 
     def __on_cc_charging_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_charging_state_lock:
