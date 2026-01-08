@@ -160,20 +160,28 @@ class CarConnectivityBridge(Bridge):
                 return
             if vehicle.manufacturer.enabled and vehicle.manufacturer.value is not None:
                 manufacturer: str = vehicle.manufacturer.value
+                vehicle.manufacturer.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.VALUE_CHANGED)
             else:
                 manufacturer: str = 'Unknown'
+                vehicle.manufacturer.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
             if vehicle.name.enabled and vehicle.name.value is not None and len(vehicle.name.value) > 0:
                 name: str = vehicle.name.value
+                vehicle.name.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.VALUE_CHANGED)
             else:
                 name: str = vin
+                vehicle.name.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
             if vehicle.model.enabled and vehicle.model.value is not None and len(vehicle.model.value) > 0:
                 model: str = vehicle.model.value
+                vehicle.model.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.VALUE_CHANGED)
             else:
                 model: str = 'Unknown'
+                vehicle.model.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
             if vehicle.software is not None and vehicle.software.enabled and vehicle.software.version is not None and vehicle.software.version.enabled:
                 vehicle_software_version: Optional[str] = vehicle.software.version.value
+                vehicle.software.version.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.VALUE_CHANGED)
             else:
                 vehicle_software_version: Optional[str] = None
+                vehicle.software.version.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
             # Climatization
             climatization_aid: Optional[int] = self.get_existing_aid('Climatization', vin)
             # pylint: disable-next=too-many-boolean-expressions
@@ -182,9 +190,12 @@ class CarConnectivityBridge(Bridge):
                     and (climatization_aid is None
                          or climatization_aid not in self.accessories
                          or not isinstance(self.accessories[climatization_aid], ClimatizationAccessory)):
-                climatization_accessory = ClimatizationAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Climatization', vin),
-                                                                 id_str='Climatization', vin=vin, display_name=f'{name} Climatization',
-                                                                 vehicle=vehicle)
+                climatization_accessory: ClimatizationAccessory = ClimatizationAccessory(driver=self.driver, bridge=self,
+                                                                                         aid=self.select_aid('Climatization', vin),
+                                                                                         id_str='Climatization',
+                                                                                         vin=vin,
+                                                                                         display_name=f'{name} Climatization',
+                                                                                         vehicle=vehicle)
                 climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                          serial_number=f'{vin}-climatization')
                 self.set_config_item(climatization_accessory.id_str, climatization_accessory.vin, 'category', climatization_accessory.category)
@@ -197,6 +208,11 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[climatization_accessory.aid] = climatization_accessory
                 config_changed = True
+            else:
+                climatization_accessory: ClimatizationAccessory = self.accessories[climatization_aid]
+                climatization_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                         serial_number=f'{vin}-climatization')
+                config_changed = True
 
             # Charging
             charging_aid: Optional[int] = self.get_existing_aid('Charging', vin)
@@ -205,8 +221,8 @@ class CarConnectivityBridge(Bridge):
                     and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
                     and (charging_aid is None
                          or charging_aid not in self.accessories or not isinstance(self.accessories[charging_aid], ChargingAccessory)):
-                charging_accessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
-                                                       id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)
+                charging_accessory: ChargingAccessory = ChargingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Charging', vin),
+                                                                          id_str='Charging', vin=vin, display_name=f'{name} Charging', vehicle=vehicle)
                 charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                     serial_number=f'{vin}-charging')
                 self.set_config_item(charging_accessory.id_str, charging_accessory.vin, 'category', charging_accessory.category)
@@ -219,6 +235,11 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[charging_accessory.aid] = charging_accessory
                 config_changed = True
+            else:
+                charging_accessory: ChargingAccessory = self.accessories[charging_aid]
+                charging_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                    serial_number=f'{vin}-charging')
+                config_changed = True
 
             # ChargingPlug
             plug_aid: Optional[int] = self.get_existing_aid('ChargingPlug', vin)
@@ -226,8 +247,12 @@ class CarConnectivityBridge(Bridge):
             if 'ChargingPlug' not in self.ignore_accessory_types \
                     and isinstance(vehicle, ElectricVehicle) and vehicle.charging is not None and vehicle.charging.enabled \
                     and (plug_aid is None or plug_aid not in self.accessories or not isinstance(self.accessories[plug_aid], ChargingPlugAccessory)):
-                charging_plug_accessory = ChargingPlugAccessory(driver=self.driver, bridge=self, aid=self.select_aid('ChargingPlug', vin),
-                                                                id_str='ChargingPlug', vin=vin, display_name=f'{name} Charging Plug', vehicle=vehicle)
+                charging_plug_accessory: ChargingPlugAccessory = ChargingPlugAccessory(driver=self.driver, bridge=self,
+                                                                                       aid=self.select_aid('ChargingPlug', vin),
+                                                                                       id_str='ChargingPlug',
+                                                                                       vin=vin,
+                                                                                       display_name=f'{name} Charging Plug',
+                                                                                       vehicle=vehicle)
                 charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                          serial_number=f'{vin}-charging-plug')
                 self.set_config_item(charging_plug_accessory.id_str, charging_plug_accessory.vin, 'category', charging_plug_accessory.category)
@@ -240,6 +265,11 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[charging_plug_accessory.aid] = charging_plug_accessory
                 config_changed = True
+            else:
+                charging_plug_accessory: ChargingPlugAccessory = self.accessories[plug_aid]
+                charging_plug_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                         serial_number=f'{vin}-charging-plug')
+                config_changed = True
 
             # OutsideTemperature
             outside_temperature_aid: Optional[int] = self.get_existing_aid('OutsideTemperature', vin)
@@ -249,9 +279,12 @@ class CarConnectivityBridge(Bridge):
                     and (outside_temperature_aid is None
                          or outside_temperature_aid not in self.accessories or not isinstance(self.accessories[outside_temperature_aid],
                                                                                               OutsideTemperatureAccessory)):
-                outside_temperature_accessory = OutsideTemperatureAccessory(driver=self.driver, bridge=self, aid=self.select_aid('OutsideTemperature', vin),
-                                                                            id_str='OutsideTemperature', vin=vin, display_name=f'{name} Outside Temperature',
-                                                                            vehicle=vehicle)
+                outside_temperature_accessory: OutsideTemperatureAccessory = OutsideTemperatureAccessory(driver=self.driver, bridge=self,
+                                                                                                         aid=self.select_aid('OutsideTemperature', vin),
+                                                                                                         id_str='OutsideTemperature',
+                                                                                                         vin=vin,
+                                                                                                         display_name=f'{name} Outside Temperature',
+                                                                                                         vehicle=vehicle)
                 outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                                serial_number=f'{vin}-outside-temperature')
                 self.set_config_item(outside_temperature_accessory.id_str, outside_temperature_accessory.vin, 'category',
@@ -265,6 +298,11 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[outside_temperature_accessory.aid] = outside_temperature_accessory
                 config_changed = True
+            else:
+                outside_temperature_accessory: OutsideTemperatureAccessory = self.accessories[outside_temperature_aid]
+                outside_temperature_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                               serial_number=f'{vin}-outside-temperature')
+                config_changed = True
 
             # FlashingAccessory
             flashing_light_aid: Optional[int] = self.get_existing_aid('FlashingLight', vin)
@@ -273,9 +311,12 @@ class CarConnectivityBridge(Bridge):
                     and vehicle.commands is not None and vehicle.commands is not None and 'honk-flash' in vehicle.commands.commands \
                     and (flashing_light_aid is None or flashing_light_aid not in self.accessories or not isinstance(self.accessories[flashing_light_aid],
                                                                                                                     FlashingLightAccessory)):
-                flashing_light_accessory = FlashingLightAccessory(driver=self.driver, bridge=self, aid=self.select_aid('FlashingLight', vin),
-                                                                  id_str='FlashingLight', vin=vin, display_name=f'{name} Flashing',
-                                                                  vehicle=vehicle)
+                flashing_light_accessory: FlashingLightAccessory = FlashingLightAccessory(driver=self.driver, bridge=self,
+                                                                                          aid=self.select_aid('FlashingLight', vin),
+                                                                                          id_str='FlashingLight',
+                                                                                          vin=vin,
+                                                                                          display_name=f'{name} Flashing',
+                                                                                          vehicle=vehicle)
                 flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                           serial_number=f'{vin}-flashing-light')
                 self.set_config_item(flashing_light_accessory.id_str, flashing_light_accessory.vin, 'category',
@@ -289,6 +330,11 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[flashing_light_accessory.aid] = flashing_light_accessory
                 config_changed = True
+            else:
+                flashing_light_accessory: FlashingLightAccessory = self.accessories[flashing_light_aid]
+                flashing_light_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                          serial_number=f'{vin}-flashing-light')
+                config_changed = True
 
             # LockingAccessory
             locking_aid: Optional[int] = self.get_existing_aid('Locking', vin)
@@ -298,9 +344,8 @@ class CarConnectivityBridge(Bridge):
                     and 'lock-unlock' in vehicle.doors.commands.commands \
                     and (locking_aid is None or locking_aid not in self.accessories or not isinstance(self.accessories[locking_aid],
                                                                                                       LockingAccessory)):
-                locking_accessory = LockingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Locking', vin),
-                                                     id_str='Locking', vin=vin, display_name=f'{name} Locking',
-                                                     vehicle=vehicle)
+                locking_accessory: LockingAccessory = LockingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Locking', vin),
+                                                                       id_str='Locking', vin=vin, display_name=f'{name} Locking', vehicle=vehicle)
                 locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                    serial_number=f'{vin}-locking')
                 self.set_config_item(locking_accessory.id_str, locking_accessory.vin, 'category', locking_accessory.category)
@@ -313,6 +358,11 @@ class CarConnectivityBridge(Bridge):
                 else:
                     self.accessories[locking_accessory.aid] = locking_accessory
                 config_changed = True
+            else:
+                locking_accessory: LockingAccessory = self.accessories[locking_aid]
+                locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                   serial_number=f'{vin}-locking')
+                config_changed = True
 
             # Window Heating
             window_heating_aid: Optional[int] = self.get_existing_aid('Window Heating', vin)
@@ -321,8 +371,12 @@ class CarConnectivityBridge(Bridge):
                     and vehicle.window_heatings is not None and vehicle.window_heatings.enabled \
                     and (window_heating_aid is None
                          or window_heating_aid not in self.accessories or not isinstance(self.accessories[window_heating_aid], WindowHeatingAccessory)):
-                window_heating_accessory = WindowHeatingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Window Heating', vin),
-                                                                  id_str='Window Heating', vin=vin, display_name=f'{name} Window Heating', vehicle=vehicle)
+                window_heating_accessory: WindowHeatingAccessory = WindowHeatingAccessory(driver=self.driver, bridge=self,
+                                                                                          aid=self.select_aid('Window Heating', vin),
+                                                                                          id_str='Window Heating',
+                                                                                          vin=vin,
+                                                                                          display_name=f'{name} Window Heating',
+                                                                                          vehicle=vehicle)
                 window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
                                                           serial_number=f'{vin}-window-heating')
                 self.set_config_item(window_heating_accessory.id_str, window_heating_accessory.vin, 'category', window_heating_accessory.category)
@@ -334,6 +388,11 @@ class CarConnectivityBridge(Bridge):
                 # Replace the accessory if it is known but not of the correct type (was Dummy before)
                 else:
                     self.accessories[window_heating_accessory.aid] = window_heating_accessory
+                config_changed = True
+            else:
+                window_heating_accessory: WindowHeatingAccessory = self.accessories[window_heating_aid]
+                window_heating_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
+                                                          serial_number=f'{vin}-window-heating')
                 config_changed = True
 
         if config_changed:
@@ -422,3 +481,8 @@ class CarConnectivityBridge(Bridge):
         if identifier in self.__accessory_config and config_key in self.__accessory_config[identifier]:
             return self.__accessory_config[identifier][config_key]
         return None
+
+    def __on_vehicle_update(self, element: Any, flags: Observable.ObserverEvent) -> None:
+        """Update the accessories when the vehicle is updated."""
+        if (flags & (Observable.ObserverEvent.UPDATED)) and isinstance(element, GenericVehicle):
+            self.update(vehicle=element)
