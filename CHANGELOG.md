@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - No unreleased changes so far
 
+### [0.7.3] - 2026-01-08
+### Added
+- Improved debugging possibility by showing more details of the state in the UI
+
 ### [0.7.2] - 2026-01-08
 ### Fixed
 - Characteristics now always get carconenctivity callbacks registered, regardless of enabled state
@@ -59,7 +63,8 @@ Note: This plugin is required for compatibility with CarConnectivity version 0.1
 ## [0.1] - 2025-01-25
 Initial release, let's go and give this to the public to try out...
 
-[unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.2...HEAD
+[unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.3
 [0.7.2]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.2
 [0.7.1]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.1
 [0.7]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7
