@@ -60,6 +60,12 @@ class ChargingPlugAccessory(GenericAccessory):
                 else:
                     self.__on_cc_connection_state_change(ChargingConnector.ChargingConnectorConnectionState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
 
+    def __del__(self) -> None:
+        if self.vehicle is not None and isinstance(self.vehicle, ElectricVehicle) and self.vehicle.charging is not None \
+                and self.vehicle.charging.connector is not None:
+            if self.vehicle.charging.connector.connection_state is not None:
+                self.vehicle.charging.connector.connection_state.remove_observer(self.__on_cc_connection_state_change)
+
     def __on_cc_connection_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_connection_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:

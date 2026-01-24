@@ -200,6 +200,14 @@ class BatteryGenericVehicleAccessory(GenericAccessory):
                     self.char_charging_state = self.battery_service.configure_char('ChargingState')
                     self._set_charging_state(self.vehicle.charging.state.value)
 
+    def __del__(self) -> None:
+        if isinstance(self.vehicle, ElectricVehicle):
+            electric_drive: Optional[ElectricDrive] = self.vehicle.get_electric_drive()
+            if electric_drive is not None and electric_drive.level is not None:
+                electric_drive.level.remove_observer(self._on_level_change)
+            if self.vehicle.charging is not None and self.vehicle.charging.state is not None:
+                self.vehicle.charging.state.remove_observer(self._on_charging_state)
+
     def _set_low_battery_status(self, level: Optional[float]) -> None:
         if self.char_status_low_battery is not None:
             if level is None or level > 10:

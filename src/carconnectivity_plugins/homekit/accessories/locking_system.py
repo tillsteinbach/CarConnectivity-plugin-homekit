@@ -68,6 +68,11 @@ class LockingAccessory(GenericAccessory):
                 else:
                     self.__on_cc_lock_state_change(Doors.LockState.UNKNOWN, flags=Observable.ObserverEvent.VALUE_CHANGED)
 
+    def __del__(self) -> None:
+        if self.vehicle is not None and self.vehicle.doors is not None:
+            if self.vehicle.doors.lock_state is not None:
+                self.vehicle.doors.lock_state.remove_observer(self.__on_cc_lock_state_change)
+
     def __on_hk_lock_target_state_change(self, value: Any) -> None:
         if self.char_lock_target_state is not None:
             if self.lock_unlock_command is not None and self.lock_unlock_command.enabled:

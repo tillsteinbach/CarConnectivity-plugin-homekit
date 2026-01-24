@@ -131,6 +131,15 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
             self.vehicle.add_observer(self.__on_cc_car_type_change, flag=Observable.ObserverEvent.UPDATED)
     # pylint: disable=duplicate-code
 
+    def __del__(self) -> None:
+        if self.vehicle is not None and self.vehicle.climatization is not None:
+            if self.vehicle.climatization.state is not None:
+                self.vehicle.climatization.state.remove_observer(self.__on_cc_climatization_state_change)
+            if self.target_temperature_attribute is not None:
+                self.target_temperature_attribute.remove_observer(self.__on_cc_target_temperature_change)
+            if self.vehicle.climatization.estimated_date_reached is not None:
+                self.vehicle.climatization.estimated_date_reached.remove_observer(self.__on_cc_estimated_date_reached_change)
+
     def __on_cc_car_type_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_car_type_lock:
             if flags & Observable.ObserverEvent.UPDATED:

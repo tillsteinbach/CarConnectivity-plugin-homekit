@@ -73,6 +73,10 @@ class OutsideTemperatureAccessory(GenericAccessory):
                 self.__on_cc_outside_temperature_change(self.vehicle.outside_temperature, Observable.ObserverEvent.VALUE_CHANGED)
     # pylint: disable=duplicate-code
 
+    def __del__(self) -> None:
+        if self.vehicle is not None and self.vehicle.outside_temperature is not None:
+            self.vehicle.outside_temperature.remove_observer(self.__on_cc_outside_temperature_change)
+
     def __on_cc_outside_temperature_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_temperature_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED and isinstance(element, TemperatureAttribute):

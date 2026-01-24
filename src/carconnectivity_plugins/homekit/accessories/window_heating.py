@@ -68,6 +68,11 @@ class WindowHeatingAccessory(GenericAccessory):  # pylint: disable=too-many-inst
                 if self.vehicle.window_heatings.commands is not None and self.vehicle.window_heatings.commands.contains_command('start-stop'):
                     self.window_heating_start_stop_command = self.vehicle.window_heatings.commands.commands['start-stop']
 
+    def __del__(self) -> None:
+        if self.vehicle is not None and self.vehicle.window_heatings is not None:
+            if self.vehicle.window_heatings.heating_state is not None:
+                self.vehicle.window_heatings.heating_state.remove_observer(self.__on_cc_heating_state_change)
+
     def __on_cc_heating_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_heating_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:

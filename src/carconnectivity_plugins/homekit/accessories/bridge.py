@@ -83,6 +83,20 @@ class CarConnectivityBridge(Bridge):
         if self.car_connectivity.garage is not None:
             self.car_connectivity.garage.add_observer(observer=self.__on_garage_update, flag=Observable.ObserverEvent.ENABLED, on_transaction_end=True)
 
+    def uninstall_observers(self) -> None:
+        """
+        Uninstalls observers for the car connectivity components.
+
+        This method checks if the garage component of the car connectivity is not None.
+        If it is not None, it removes the observer from the garage component to stop listening for updates.
+        The observer is set to trigger on the ENABLED event and will execute at the end of a transaction.
+
+        Returns:
+            None
+        """
+        if self.car_connectivity.garage is not None:
+            self.car_connectivity.garage.remove_observer(observer=self.__on_garage_update)
+
     def __on_garage_update(self, element: Any, flags: Observable.ObserverEvent) -> None:
         """Update the accessories when the garage is updated."""
         if (flags & (Observable.ObserverEvent.ENABLED)) and isinstance(element, GenericVehicle):

@@ -118,6 +118,7 @@ class Plugin(BasePlugin):
                     self._bridge.update(vehicle=vehicle)
 
     def shutdown(self) -> None:
+        self._bridge.uninstall_observers()
         self.stop_event.set()
         self._driver.stop()
         if self._background_thread is not None:

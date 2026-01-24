@@ -106,6 +106,18 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
                     self.__on_cc_connector_state_change(ChargingConnector.ChargingConnectorConnectionState.UNKNOWN,
                                                         Observable.ObserverEvent.VALUE_CHANGED)
 
+    def __del__(self) -> None:
+        if self.vehicle is not None and isinstance(self.vehicle, ElectricVehicle) and self.vehicle.charging is not None:
+            if self.vehicle.charging.state is not None:
+                self.vehicle.charging.state.remove_observer(self.__on_cc_charging_state_change)
+            if self.vehicle.charging.estimated_date_reached is not None:
+                self.vehicle.charging.estimated_date_reached.remove_observer(self.__on_cc_estimated_date_reached_change)
+            if self.vehicle.charging.power is not None:
+                self.vehicle.charging.power.remove_observer(self.__on_cc_power_change)
+            if self.vehicle.charging.connector is not None:
+                if self.vehicle.charging.connector.connection_state is not None:
+                    self.vehicle.charging.connector.connection_state.remove_observer(self.__on_cc_connector_state_change)
+
     def __on_cc_charging_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
         with self.cc_charging_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
