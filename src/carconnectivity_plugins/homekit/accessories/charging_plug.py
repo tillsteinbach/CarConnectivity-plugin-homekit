@@ -12,6 +12,7 @@ from pyhap.const import CATEGORY_SENSOR
 from carconnectivity.charging_connector import ChargingConnector
 from carconnectivity.observable import Observable
 from carconnectivity.vehicle import ElectricVehicle
+from carconnectivity.attributes import EnumAttribute
 
 from carconnectivity_plugins.homekit.accessories.generic_accessory import GenericAccessory
 
@@ -58,7 +59,7 @@ class ChargingPlugAccessory(GenericAccessory):
                 if self.vehicle.charging.connector.connection_state.enabled:
                     self.__on_cc_connection_state_change(self.vehicle.charging.connector.connection_state, Observable.ObserverEvent.VALUE_CHANGED)
                 else:
-                    self.__on_cc_connection_state_change(ChargingConnector.ChargingConnectorConnectionState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
+                    self.__on_cc_connection_state_change(None, Observable.ObserverEvent.VALUE_CHANGED)
 
     def __del__(self) -> None:
         if self.vehicle is not None and isinstance(self.vehicle, ElectricVehicle) and self.vehicle.charging is not None \
@@ -66,11 +67,11 @@ class ChargingPlugAccessory(GenericAccessory):
             if self.vehicle.charging.connector.connection_state is not None:
                 self.vehicle.charging.connector.connection_state.remove_observer(self.__on_cc_connection_state_change)
 
-    def __on_cc_connection_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+    def __on_cc_connection_state_change(self, element: Optional[EnumAttribute[ChargingConnector.ChargingConnectorConnectionState]], flags: Observable.ObserverEvent) -> None:
         with self.cc_connection_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_contact_sensor_state is not None:
-                    if element.value is None:
+                    if element is None or element.value is None:
                         self.char_contact_sensor_state.set_value(0)
                         if self.char_status_fault is not None:
                             self.char_status_fault.set_value(0)

@@ -17,6 +17,7 @@ from carconnectivity.units import Temperature
 from carconnectivity.attributes import TemperatureAttribute
 from carconnectivity.climatization import Climatization
 from carconnectivity.command_impl import ClimatizationStartStopCommand
+from carconnectivity.attributes import EnumAttribute
 
 from carconnectivity_plugins.homekit.accessories.generic_accessory import BatteryGenericVehicleAccessory
 from carconnectivity_plugins.homekit.accessories.util import TEMPERATURE_UNIT_TO_VALUE, VALUE_TO_TEMPERATURE_UNIT
@@ -103,7 +104,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
                 if self.vehicle.climatization.state.enabled:
                     self.__on_cc_climatization_state_change(self.vehicle.climatization.state, Observable.ObserverEvent.VALUE_CHANGED)
                 else:
-                    self.__on_cc_climatization_state_change(Climatization.ClimatizationState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
+                    self.__on_cc_climatization_state_change(None, Observable.ObserverEvent.VALUE_CHANGED)
 
             if self.vehicle.climatization.commands is not None and self.vehicle.climatization.commands.contains_command('start-stop'):
                 self.climatization_start_stop_command = self.vehicle.climatization.commands.commands['start-stop']
@@ -233,11 +234,12 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
                     min_value = self.target_temperature_attribute.minimum
                 self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': min_step, 'minValue': 61})
 
-    def __on_cc_climatization_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:  # pylint: disable=too-many-branches
+    def __on_cc_climatization_state_change(self, element: Optional[EnumAttribute[Climatization.ClimatizationState]],
+                                           flags: Observable.ObserverEvent) -> None:  # pylint: disable=too-many-branches
         with self.cc_climatization_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_current_heating_cooling_state is not None:
-                    if element.value is None:
+                    if element is None or element.value is None:
                         self.char_current_heating_cooling_state.set_value(0)
                         if self.char_target_heating_cooling_state is not None:
                             self.char_target_heating_cooling_state.set_value(0)
@@ -258,7 +260,7 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
                         if self.char_target_heating_cooling_state is not None:
                             self.char_target_heating_cooling_state.set_value(0)
                         LOG.warning('unsupported climatisationState: %s', element.value.value)
-                    LOG.debug('Climatization State Changed: %s', element.value.value)
+                    LOG.debug('Climatization State Changed: %s', element.value.value if element is not None and element.value is not None else 'unknown')
                 else:
                     LOG.debug('Unsupported event %s', flags)
 

@@ -104,7 +104,7 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
                     self.__on_cc_connector_state_change(self.vehicle.charging.connector.connection_state,
                                                         Observable.ObserverEvent.VALUE_CHANGED)
                 else:
-                    self.__on_cc_connector_state_change(ChargingConnector.ChargingConnectorConnectionState.UNKNOWN,
+                    self.__on_cc_connector_state_change(None,
                                                         Observable.ObserverEvent.VALUE_CHANGED)
 
     def __del__(self) -> None:
@@ -203,11 +203,11 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
             else:
                 LOG.debug('Unsupported event %s', flags)
 
-    def __on_cc_connector_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+    def __on_cc_connector_state_change(self, element: Optional[EnumAttribute[ChargingConnector.ChargingConnectorConnectionState]], flags: Observable.ObserverEvent) -> None:
         with self.cc_connector_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_outlet_in_use is not None:
-                    if element.value is None:
+                    if element is None or element.value is None:
                         self.char_outlet_in_use.set_value(False)
                     elif element.value == ChargingConnector.ChargingConnectorConnectionState.CONNECTED:
                         self.char_outlet_in_use.set_value(True)

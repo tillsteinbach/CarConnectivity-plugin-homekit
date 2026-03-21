@@ -14,6 +14,7 @@ from carconnectivity.attributes import Observable
 from carconnectivity.commands import GenericCommand
 from carconnectivity.command_impl import LockUnlockCommand
 from carconnectivity.doors import Doors
+from carconnectivity.attributes import EnumAttribute
 
 from carconnectivity_plugins.homekit.accessories.generic_accessory import GenericAccessory
 
@@ -66,7 +67,7 @@ class LockingAccessory(GenericAccessory):
                 if self.vehicle.doors.lock_state.enabled:
                     self.__on_cc_lock_state_change(self.vehicle.doors.lock_state, flags=Observable.ObserverEvent.VALUE_CHANGED)
                 else:
-                    self.__on_cc_lock_state_change(Doors.LockState.UNKNOWN, flags=Observable.ObserverEvent.VALUE_CHANGED)
+                    self.__on_cc_lock_state_change(None, flags=Observable.ObserverEvent.VALUE_CHANGED)
 
     def __del__(self) -> None:
         if self.vehicle is not None and self.vehicle.doors is not None:
@@ -104,11 +105,15 @@ class LockingAccessory(GenericAccessory):
                     self.char_lock_target_state.set_value(0)
                 self.set_status_fault(1, timeout=120)
 
-    def __on_cc_lock_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+    def __on_cc_lock_state_change(self, element: Optional[EnumAttribute[Doors.LockState]], flags: Observable.ObserverEvent) -> None:
         with self.cc_lock_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_lock_current_state is not None:
-                    if element.value == Doors.LockState.LOCKED:
+                    if element is None or element.value is None:
+                        self.char_lock_current_state.set_value(3)
+                        if self.char_lock_target_state is not None:
+                            self.char_lock_target_state.set_value(1)
+                    elif element.value == Doors.LockState.LOCKED:
                         self.char_lock_current_state.set_value(1)
                         if self.char_lock_target_state is not None:
                             self.char_lock_target_state.set_value(1)
