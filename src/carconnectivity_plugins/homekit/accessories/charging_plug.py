@@ -17,7 +17,7 @@ from carconnectivity.attributes import EnumAttribute
 from carconnectivity_plugins.homekit.accessories.generic_accessory import GenericAccessory
 
 if TYPE_CHECKING:
-    from typing import Optional, Any
+    from typing import Optional
 
     from pyhap.service import Service
     from pyhap.accessory_driver import AccessoryDriver
