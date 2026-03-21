@@ -19,6 +19,7 @@ from carconnectivity.vehicle import ElectricVehicle
 from carconnectivity.charging import Charging
 from carconnectivity.attributes import PowerAttribute
 from carconnectivity.units import Power
+from carconnectivity.attributes import EnumAttribute
 
 from carconnectivity_plugins.homekit.accessories.generic_accessory import BatteryGenericVehicleAccessory
 
@@ -76,7 +77,7 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
                 if self.vehicle.charging.state.enabled:
                     self.__on_cc_charging_state_change(self.vehicle.charging.state, Observable.ObserverEvent.VALUE_CHANGED)
                 else:
-                    self.__on_cc_charging_state_change(Charging.ChargingState.UNKNOWN, Observable.ObserverEvent.VALUE_CHANGED)
+                    self.__on_cc_charging_state_change(None, Observable.ObserverEvent.VALUE_CHANGED)
 
                 if self.vehicle.charging.commands is not None and self.vehicle.charging.commands.contains_command('start-stop'):
                     self.charging_start_stop_command = self.vehicle.charging.commands.commands['start-stop']
@@ -118,11 +119,11 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
                 if self.vehicle.charging.connector.connection_state is not None:
                     self.vehicle.charging.connector.connection_state.remove_observer(self.__on_cc_connector_state_change)
 
-    def __on_cc_charging_state_change(self, element: Any, flags: Observable.ObserverEvent) -> None:
+    def __on_cc_charging_state_change(self, element: Optional[EnumAttribute[Charging.ChargingState]], flags: Observable.ObserverEvent) -> None:
         with self.cc_charging_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_on is not None:
-                    if element.value is None:
+                    if element is None or element.value is None:
                         self.char_on.set_value(0)
                     elif element.value in (Charging.ChargingState.OFF,
                                            Charging.ChargingState.READY_FOR_CHARGING):
