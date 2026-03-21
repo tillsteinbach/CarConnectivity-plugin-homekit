@@ -234,8 +234,8 @@ class ClimatizationAccessory(BatteryGenericVehicleAccessory):  # pylint: disable
                     min_value = self.target_temperature_attribute.minimum
                 self.char_target_temperature.override_properties(properties={'maxValue': 85, 'minStep': min_step, 'minValue': 61})
 
-    def __on_cc_climatization_state_change(self, element: Optional[EnumAttribute[Climatization.ClimatizationState]],
-                                           flags: Observable.ObserverEvent) -> None:  # pylint: disable=too-many-branches
+    def __on_cc_climatization_state_change(self, element: Optional[EnumAttribute[Climatization.ClimatizationState]],  # pylint: disable=too-many-branches
+                                           flags: Observable.ObserverEvent) -> None:
         with self.cc_climatization_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_current_heating_cooling_state is not None:

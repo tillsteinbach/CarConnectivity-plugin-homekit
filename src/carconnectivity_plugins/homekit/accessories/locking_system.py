@@ -105,6 +105,7 @@ class LockingAccessory(GenericAccessory):
                     self.char_lock_target_state.set_value(0)
                 self.set_status_fault(1, timeout=120)
 
+    # pylint: disable-next=too-many-branches
     def __on_cc_lock_state_change(self, element: Optional[EnumAttribute[Doors.LockState]], flags: Observable.ObserverEvent) -> None:
         with self.cc_lock_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:

@@ -67,7 +67,8 @@ class ChargingPlugAccessory(GenericAccessory):
             if self.vehicle.charging.connector.connection_state is not None:
                 self.vehicle.charging.connector.connection_state.remove_observer(self.__on_cc_connection_state_change)
 
-    def __on_cc_connection_state_change(self, element: Optional[EnumAttribute[ChargingConnector.ChargingConnectorConnectionState]], flags: Observable.ObserverEvent) -> None:
+    def __on_cc_connection_state_change(self, element: Optional[EnumAttribute[ChargingConnector.ChargingConnectorConnectionState]],
+                                        flags: Observable.ObserverEvent) -> None:
         with self.cc_connection_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_contact_sensor_state is not None:

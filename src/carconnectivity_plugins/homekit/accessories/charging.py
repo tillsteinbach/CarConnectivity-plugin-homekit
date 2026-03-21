@@ -203,7 +203,8 @@ class ChargingAccessory(BatteryGenericVehicleAccessory):  # pylint: disable=too-
             else:
                 LOG.debug('Unsupported event %s', flags)
 
-    def __on_cc_connector_state_change(self, element: Optional[EnumAttribute[ChargingConnector.ChargingConnectorConnectionState]], flags: Observable.ObserverEvent) -> None:
+    def __on_cc_connector_state_change(self, element: Optional[EnumAttribute[ChargingConnector.ChargingConnectorConnectionState]],
+                                       flags: Observable.ObserverEvent) -> None:
         with self.cc_connector_state_lock:
             if flags & Observable.ObserverEvent.VALUE_CHANGED:
                 if self.char_outlet_in_use is not None:
