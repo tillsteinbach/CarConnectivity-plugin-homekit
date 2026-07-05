@@ -84,7 +84,7 @@ Note: This plugin is required for compatibility with CarConnectivity version 0.1
 Initial release, let's go and give this to the public to try out...
 
 [unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.8...HEAD
-[0.7.8]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.7...v0.7.8
+[0.7.8]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.8
 [0.7.7]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.7
 [0.7.6]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.6
 [0.7.5]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.5
