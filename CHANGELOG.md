@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - No unreleased changes so far
 
+## [0.7.8] - 2026-07-05
+### Changed
+- Updated dependencies
+
 ## [0.7.7] - 2026-04-24
 ### Changed
 - Updated dependencies
@@ -79,7 +83,8 @@ Note: This plugin is required for compatibility with CarConnectivity version 0.1
 ## [0.1] - 2025-01-25
 Initial release, let's go and give this to the public to try out...
 
-[unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.7...HEAD
+[unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.8...HEAD
+[0.7.8]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.8
 [0.7.7]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.7
 [0.7.6]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.6
 [0.7.5]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.5
