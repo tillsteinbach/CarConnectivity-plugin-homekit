@@ -3,7 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-- No unreleased changes so far
+### Added
+- New option `readonly_locking`: creates a read-only Locking accessory for vehicles whose connector reports the lock state but offers no lock-unlock command (e.g. Skoda public API). Lock/unlock requests from HomeKit are logged, rejected and signalled via StatusFault.
+### Fixed
+- Locking accessory now always handles LockTargetState writes from HomeKit instead of silently accepting them when locking is not possible
 
 ## [0.7.7] - 2026-04-24
 ### Changed

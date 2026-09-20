@@ -86,6 +86,15 @@ class Plugin(BasePlugin):
         else:
             self.active_config['ignore_accessory_types'] = []
 
+        # If enabled, a Locking accessory is created for vehicles that only report the lock state but whose connector
+        # does not offer a lock-unlock command (e.g. Skoda public API). The lock is then read-only in HomeKit.
+        if 'readonly_locking' in config and config['readonly_locking'] is not None:
+            if not isinstance(config['readonly_locking'], bool):
+                raise ConfigurationError(f'Invalid value for readonly_locking: "{config["readonly_locking"]}". Expected true or false.')
+            self.active_config['readonly_locking'] = config['readonly_locking']
+        else:
+            self.active_config['readonly_locking'] = False
+
         # Add the accessory driver
         self._driver = AccessoryDriver(address=self.active_config['address'], port=self.active_config['port'], pincode=pincode,
                                        persist_file=self.active_config['accessory_state_file'])
@@ -95,7 +104,8 @@ class Plugin(BasePlugin):
 
         self._bridge = CarConnectivityBridge(driver=self._driver, car_connectivity=car_connectivity,
                                              accessory_config_file=self.active_config['accessory_config_file'],
-                                             ignore_vins=self.active_config['ignore_vins'], ignore_accessory_types=self.active_config['ignore_accessory_types'])
+                                             ignore_vins=self.active_config['ignore_vins'], ignore_accessory_types=self.active_config['ignore_accessory_types'],
+                                             readonly_locking=self.active_config['readonly_locking'])
         self._driver.add_accessory(self._bridge)
 
     def startup(self) -> None:

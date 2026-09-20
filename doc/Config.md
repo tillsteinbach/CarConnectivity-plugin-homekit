@@ -56,7 +56,8 @@ These are the valid options for the Homekit plugin
                     "accessory_state_file": "~/.carconnectivity/homekit-accessory.state", // File for homekit to store pairing and other information
                     "accessory_config_file": "~/.carconnectivity/homekit-accessory.config", // File for homekit to store current configuration of services
                     "ignore_vins":["WZWXYZ3CZME181225", "TTGHT9NY8SF025348"], //Do not create Homekit Accessories for these VINs
-                    "ignore_accessory_types": ["Climatization", "Charging"], //Do not create Homekti Accessories of tese types
+                    "ignore_accessory_types": ["Climatization", "Charging"], //Do not create Homekit Accessories of these types
+                    "readonly_locking": false, // If true, a Locking accessory is also created when the connector only provides the lock state but cannot lock/unlock (e.g. Skoda public API). Changing the lock in HomeKit then writes a log entry, sets StatusFault for 120s and the switch jumps back.
                 }
             }
         ]

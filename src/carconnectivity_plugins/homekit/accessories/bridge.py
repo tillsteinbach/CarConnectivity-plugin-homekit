@@ -31,13 +31,13 @@ if TYPE_CHECKING:
 LOG: logging.Logger = logging.getLogger("carconnectivity.plugins.homekit.bridge")
 
 
-class CarConnectivityBridge(Bridge):
+class CarConnectivityBridge(Bridge):  # pylint: disable=too-many-instance-attributes
     """CarConnectivity Bridge"""
 
     # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(self, car_connectivity: CarConnectivity, driver: AccessoryDriver, display_name: str = 'CarConnectivity',
                  accessory_config_file: str = '~/.carconnectivity/homekit-accessory.config', ignore_vins: Optional[List[str]] = None,
-                 ignore_accessory_types: Optional[List[str]] = None) -> None:
+                 ignore_accessory_types: Optional[List[str]] = None, readonly_locking: bool = False) -> None:
         super().__init__(driver=driver, display_name=display_name, )
 
         self.set_info_service(f'{__carconnectivity_version__} (HomeKit Plugin {__version__})', 'Till Steinbach', 'CarConnectivity', None)
@@ -45,6 +45,8 @@ class CarConnectivityBridge(Bridge):
         self.car_connectivity: CarConnectivity = car_connectivity
         self.ignore_vins: List[str] = ignore_vins or []
         self.ignore_accessory_types: List[str] = ignore_accessory_types or []
+        # Create Locking accessories also for vehicles without a lock-unlock command (read-only lock state)
+        self.readonly_locking: bool = readonly_locking
 
         self.driver: AccessoryDriver = driver
 
@@ -364,10 +366,18 @@ class CarConnectivityBridge(Bridge):
             locking_aid: Optional[int] = self.get_existing_aid('Locking', vin)
             # pylint: disable-next=too-many-boolean-expressions
             if 'Locking' not in self.ignore_accessory_types:
-                if vehicle.doors is not None and vehicle.doors.commands is not None \
-                        and 'lock-unlock' in vehicle.doors.commands.commands:
+                # The accessory is created when the lock can be controlled (lock-unlock command present).
+                # With readonly_locking it is also created when only the lock state is available, e.g. for connectors
+                # whose API does not offer locking/unlocking. The lock is then read-only in HomeKit.
+                locking_controllable: bool = vehicle.doors is not None and vehicle.doors.commands is not None \
+                    and 'lock-unlock' in vehicle.doors.commands.commands
+                locking_state_available: bool = vehicle.doors is not None and vehicle.doors.lock_state is not None \
+                    and vehicle.doors.lock_state.enabled
+                if locking_controllable or (self.readonly_locking and locking_state_available):
                     if locking_aid is None or locking_aid not in self.accessories or not isinstance(self.accessories[locking_aid],
                                                                                                     LockingAccessory):
+                        if not locking_controllable:
+                            LOG.info('Creating read-only Locking accessory for VIN %s: connector provides the lock state but no lock-unlock command', vin)
                         locking_accessory: LockingAccessory = LockingAccessory(driver=self.driver, bridge=self, aid=self.select_aid('Locking', vin),
                                                                                id_str='Locking', vin=vin, display_name=f'{name} Locking', vehicle=vehicle)
                         locking_accessory.set_info_service(firmware_revision=vehicle_software_version, manufacturer=manufacturer, model=model,
@@ -390,6 +400,8 @@ class CarConnectivityBridge(Bridge):
                 else:
                     if vehicle.doors is not None and vehicle.doors.commands is not None:
                         vehicle.doors.commands.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
+                    if self.readonly_locking and vehicle.doors is not None and vehicle.doors.lock_state is not None:
+                        vehicle.doors.lock_state.add_observer(self.__on_vehicle_update, Observable.ObserverEvent.ENABLED)
 
             # Window Heating
             window_heating_aid: Optional[int] = self.get_existing_aid('Window Heating', vin)
