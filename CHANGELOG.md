@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [0.7.9] - 2026-09-20
 ### Added
 - New option `readonly_locking`: creates a read-only Locking accessory for vehicles whose connector reports the lock state but offers no lock-unlock command (e.g. Skoda public API). Lock/unlock requests from HomeKit are logged, rejected and signalled via StatusFault.
 ### Fixed
@@ -82,7 +84,8 @@ Note: This plugin is required for compatibility with CarConnectivity version 0.1
 ## [0.1] - 2025-01-25
 Initial release, let's go and give this to the public to try out...
 
-[unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.7...HEAD
+[unreleased]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/compare/v0.7.9...HEAD
+[0.7.9]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.9
 [0.7.7]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.7
 [0.7.6]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.6
 [0.7.5]: https://github.com/tillsteinbach/CarConnectivity-plugin-homekit/releases/tag/v0.7.5
